@@ -94,7 +94,12 @@
                         <span class="nav-link text-light"><i class="bi bi-person"></i> {{ user.username }}</span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Salir</a>
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-link btn btn-link text-white">
+                                <i class="bi bi-box-arrow-right"></i> Salir
+                            </button>
+                        </form>
                     </li>
                 </ul>
             </div>
