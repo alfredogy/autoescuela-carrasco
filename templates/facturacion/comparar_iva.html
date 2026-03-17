@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Comparar IVA - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Comparaci&oacute;n IVA Correcto vs Incorrecto - {{ anio }}</h2>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <input type="number" name="anio" value="{{ anio }}" class="form-control" style="width:100px">
+    </div>
+    <div class="col-auto"><button class="btn btn-primary">Ver</button></div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:exportar_informe_iva' %}?anio={{ anio }}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
+    </div>
+</form>
+
+<div class="alert alert-info">
+    <strong>Contexto:</strong> En las facturas originales (LISTADO FACT X TRI), las TASAS se incluyeron err&oacute;neamente en la base imponible, causando que se declarara m&aacute;s IVA del correspondiente.
+</div>
+
+<div class="card mb-3">
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead class="table-dark">
+                <tr><th>Trimestre</th><th class="text-end">IVA Correcto</th><th class="text-end">IVA Declarado</th><th class="text-end">Diferencia</th><th class="text-end">Tasas</th></tr>
+            </thead>
+            <tbody>
+            {% for r in informe.resultados %}
+            <tr>
+                <td>T{{ r.trimestre }}</td>
+                <td class="text-end">{{ r.correcto.iva|floatformat:2 }} &euro;</td>
+                <td class="text-end">{{ r.incorrecto.iva|floatformat:2 }} &euro;</td>
+                <td class="text-end {% if r.diferencia_iva > 0 %}text-danger{% endif %}">{{ r.diferencia_iva|floatformat:2 }} &euro;</td>
+                <td class="text-end">{{ r.correcto.tasas|floatformat:2 }} &euro;</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="table-dark">
+                <tr>
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-end"><strong>{{ informe.total_iva_correcto|floatformat:2 }} &euro;</strong></td>
+                    <td class="text-end"><strong>{{ informe.total_iva_incorrecto|floatformat:2 }} &euro;</strong></td>
+                    <td class="text-end"><strong>{{ informe.diferencia_total|floatformat:2 }} &euro;</strong></td>
+                    <td class="text-end"><strong>{{ informe.total_tasas|floatformat:2 }} &euro;</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{% if informe.diferencia_total > 0 %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white"><strong>Exceso de IVA declarado</strong></div>
+    <div class="card-body">
+        <p>Se declar&oacute; <strong>{{ informe.diferencia_total|floatformat:2 }} &euro;</strong> de IVA de m&aacute;s ({{ informe.porcentaje_exceso|floatformat:1 }}%).</p>
+        <h6>Opciones de regularizaci&oacute;n:</h6>
+        <ol>
+            <li>Solicitar rectificaci&oacute;n de las declaraciones trimestrales</li>
+            <li>Compensar en declaraciones futuras (si procede)</li>
+            <li>Solicitar devoluci&oacute;n de ingresos indebidos</li>
+        </ol>
+        <small class="text-muted">Se recomienda consultar con un asesor fiscal.</small>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Configuraci&oacute;n - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Configuraci&oacute;n</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><strong>General</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">A&ntilde;o activo</label>
+                        {{ form.anio_activo }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo IVA</label>
+                        {{ form.iva_rate }}
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-header"><strong>Tarifas de tasas</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tasa B&aacute;sica</label>
+                        {{ form.tasa_basica }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tasa A</label>
+                        {{ form.tasa_a }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Traslado</label>
+                        {{ form.traslado }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Renovaci&oacute;n</label>
+                        {{ form.renovacion }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Datos del emisor</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        {{ form.emisor_nombre }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">DNI</label>
+                        {{ form.emisor_dni }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Domicilio</label>
+                        {{ form.emisor_domicilio }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">C.P.</label>
+                        {{ form.emisor_cp }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Municipio/Provincia</label>
+                        {{ form.emisor_municipio }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar configuraci&oacute;n</button>
+</form>
+{% endblock %}

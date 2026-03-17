@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Informe Trimestral - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Informe Trimestral</h2>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label class="form-label">A&ntilde;o</label>
+        <input type="number" name="anio" value="{{ anio }}" class="form-control" style="width:100px">
+    </div>
+    <div class="col-auto">
+        <label class="form-label">Trimestre</label>
+        <select name="trimestre" class="form-select">
+            {% for i in "1234" %}<option value="{{ i }}" {% if trimestre == i|add:0 %}selected{% endif %}>T{{ i }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-primary">Ver</button></div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:exportar_trimestre' trimestre anio %}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
+    </div>
+</form>
+
+<div class="card mb-3">
+    <div class="card-header"><strong>T{{ trimestre }} - {{ anio }}</strong> ({{ count }} facturas)</div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3"><h6 class="text-muted">Base Imponible</h6><h4>{{ totales.total_base|floatformat:2|default:"0.00" }} &euro;</h4></div>
+            <div class="col-md-3"><h6 class="text-muted">IVA</h6><h4>{{ totales.total_iva|floatformat:2|default:"0.00" }} &euro;</h4></div>
+            <div class="col-md-3"><h6 class="text-muted">Tasas</h6><h4>{{ totales.total_tasas|floatformat:2|default:"0.00" }} &euro;</h4></div>
+            <div class="col-md-3"><h6 class="text-muted">Total</h6><h4 class="text-primary">{{ totales.total_total|floatformat:2|default:"0.00" }} &euro;</h4></div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead class="table-dark">
+            <tr><th>N&ordm;</th><th>Fecha</th><th>Alumno</th><th>Curso</th><th class="text-end">Base</th><th class="text-end">IVA</th><th class="text-end">Tasas</th><th class="text-end">Total</th></tr>
+        </thead>
+        <tbody>
+        {% for f in facturas %}
+        <tr>
+            <td><a href="{% url 'facturacion:factura_detail' f.pk %}">{{ f.numero_factura }}</a></td>
+            <td>{{ f.fecha|date:"d/m/Y" }}</td>
+            <td>{{ f.nombre_factura|truncatechars:25 }}</td>
+            <td>{{ f.curso }}</td>
+            <td class="text-end">{{ f.base_imponible|floatformat:2 }}</td>
+            <td class="text-end">{{ f.iva|floatformat:2 }}</td>
+            <td class="text-end">{{ f.tasas|floatformat:2 }}</td>
+            <td class="text-end">{{ f.total|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted">No hay facturas en este trimestre</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

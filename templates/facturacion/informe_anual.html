@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Informe Anual {{ anio }} - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Informe Anual {{ anio }}</h2>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <input type="number" name="anio" value="{{ anio }}" class="form-control" style="width:100px">
+    </div>
+    <div class="col-auto"><button class="btn btn-primary">Ver</button></div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:exportar_anual' anio %}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
+    </div>
+</form>
+
+<div class="card mb-3">
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead class="table-dark">
+                <tr><th>Trimestre</th><th class="text-end">Facturas</th><th class="text-end">Base</th><th class="text-end">IVA</th><th class="text-end">Tasas</th><th class="text-end">Total</th></tr>
+            </thead>
+            <tbody>
+            {% for t in trimestres %}
+            <tr>
+                <td>T{{ t.num }}</td>
+                <td class="text-end">{{ t.count }}</td>
+                <td class="text-end">{{ t.total_base|floatformat:2 }}</td>
+                <td class="text-end">{{ t.total_iva|floatformat:2 }}</td>
+                <td class="text-end">{{ t.total_tasas|floatformat:2 }}</td>
+                <td class="text-end">{{ t.total_total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="table-dark">
+                <tr>
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-end"><strong>{{ total.count }}</strong></td>
+                    <td class="text-end"><strong>{{ total.total_base|floatformat:2 }}</strong></td>
+                    <td class="text-end"><strong>{{ total.total_iva|floatformat:2 }}</strong></td>
+                    <td class="text-end"><strong>{{ total.total_tasas|floatformat:2 }}</strong></td>
+                    <td class="text-end"><strong>{{ total.total_total|floatformat:2 }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{% if faltantes %}
+<div class="card border-warning">
+    <div class="card-header bg-warning text-dark"><strong>Facturas faltantes ({{ faltantes|length }})</strong></div>
+    <div class="card-body">
+        {% for num in faltantes %}
+        <span class="badge bg-warning text-dark me-1">{{ anio }}/{{ num|stringformat:"04d" }}</span>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success">La numeraci&oacute;n de facturas est&aacute; completa.</div>
+{% endif %}
+{% endblock %}

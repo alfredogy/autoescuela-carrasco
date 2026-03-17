@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Facturas Faltantes - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Facturas Faltantes - {{ anio }}</h2>
+
+<form method="get" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-auto">
+            <input type="number" name="anio" value="{{ anio }}" class="form-control" style="width:100px">
+        </div>
+        <div class="col-auto"><button class="btn btn-primary">Analizar</button></div>
+    </div>
+</form>
+
+{% if rango_min %}
+<p>Rango: <strong>{{ anio }}/{{ rango_min|stringformat:"04d" }}</strong> - <strong>{{ anio }}/{{ rango_max|stringformat:"04d" }}</strong> | Existentes: {{ total_existentes }}</p>
+{% endif %}
+
+{% if faltantes %}
+<div class="alert alert-warning">
+    <strong>{{ faltantes|length }}</strong> facturas faltantes en la secuencia:
+</div>
+<div class="mb-3">
+    {% for num in faltantes %}
+    <span class="badge bg-warning text-dark me-1 mb-1">{{ anio }}/{{ num|stringformat:"04d" }}</span>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-success">No faltan facturas. La numeraci&oacute;n est&aacute; completa.</div>
+{% endif %}
+{% endblock %}

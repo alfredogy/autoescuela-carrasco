@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Importar Excel - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Importar datos desde Excel</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Importar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Instrucciones</strong></div>
+            <div class="card-body">
+                <h6>Trimestre (Trimestre-X.xlsx)</h6>
+                <p class="small">Columnas esperadas: CURSO, N&ordm; FACTURA, FECHA, NOMBRE Y APELLIDOS, DNI, BASE IMPONIBLE, IVA, TASAS, TOTAL, DIRECCION, CP, MUNICIPIO, PROVINCIA</p>
+                <h6>Listado hist&oacute;rico</h6>
+                <p class="small">Para comparaci&oacute;n de IVA. Columnas: N&ordm; FRA, NETO, IVA 21%, TOTAL</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

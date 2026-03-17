@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Revisar DNIs - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Revisi&oacute;n de DNIs</h2>
+<p>DNIs revisados: <strong>{{ total_revisados }}</strong> | Con errores: <strong class="text-danger">{{ total_errores }}</strong></p>
+
+{% if errores %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead class="table-dark">
+            <tr><th>#</th><th>Alumno</th><th>DNI</th><th>Tipo</th><th>Errores</th><th>Sugerencia</th></tr>
+        </thead>
+        <tbody>
+        {% for e in errores %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="{% url 'facturacion:alumno_update' e.alumno.pk %}">{{ e.alumno.nombre }}</a></td>
+            <td><code>{{ e.alumno.dni }}</code></td>
+            <td>{{ e.resultado.tipo }}</td>
+            <td>
+                {% for err in e.resultado.errores %}
+                <span class="badge bg-danger">{{ err }}</span>
+                {% endfor %}
+            </td>
+            <td>{% if e.resultado.sugerencia %}<code class="text-success">{{ e.resultado.sugerencia }}</code>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-success">Todos los DNIs tienen formato correcto.</div>
+{% endif %}
+{% endblock %}
