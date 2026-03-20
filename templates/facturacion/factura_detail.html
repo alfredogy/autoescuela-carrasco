@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Factura {{ object.numero_factura }} - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col"><h2>Factura {{ object.numero_factura }}</h2></div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:factura_pdf' object.pk %}" class="btn btn-danger" target="_blank"><i class="bi bi-file-pdf"></i> PDF</a>
+        <a href="{% url 'facturacion:factura_update' object.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+        <a href="{% url 'facturacion:factura_delete' object.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Datos de la factura</strong></div>
+            <table class="table table-sm mb-0">
+                <tr><th>N&ordm; Factura</th><td>{{ object.numero_factura }}</td></tr>
+                <tr><th>Fecha</th><td>{{ object.fecha|date:"d/m/Y" }}</td></tr>
+                <tr><th>Curso</th><td>{{ object.curso }}</td></tr>
+                <tr><th>Trimestre</th><td>T{{ object.trimestre }} / {{ object.anio }}</td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Cliente</strong></div>
+            <table class="table table-sm mb-0">
+                <tr><th>Nombre</th><td>{{ object.nombre_factura }}</td></tr>
+                <tr><th>DNI</th><td>{{ object.dni_factura }}</td></tr>
+                <tr><th>Direcci&oacute;n</th><td>{{ object.direccion_factura }}</td></tr>
+                <tr><th>C.P.</th><td>{{ object.cp_factura }}</td></tr>
+                <tr><th>Municipio</th><td>{{ object.municipio_factura }}</td></tr>
+                <tr><th>Provincia</th><td>{{ object.provincia_factura }}</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Importes</strong></div>
+            <table class="table table-sm mb-0">
+                <tr><th>Base Imponible</th><td class="text-end">{{ object.base_imponible|floatformat:2 }} &euro;</td></tr>
+                <tr><th>IVA (21%)</th><td class="text-end">{{ object.iva|floatformat:2 }} &euro;</td></tr>
+                <tr><th>Tasas (exentas)</th><td class="text-end">{{ object.tasas|floatformat:2 }} &euro;</td></tr>
+                <tr class="table-primary"><th>TOTAL</th><td class="text-end"><strong>{{ object.total|floatformat:2 }} &euro;</strong></td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Tasas aplicadas</strong></div>
+            <table class="table table-sm mb-0">
+                <tr><th>Tasa B&aacute;sica B</th><td>{{ object.tasa_basica_qty }}</td></tr>
+                <tr><th>Tasa A</th><td>{{ object.tasa_a_qty }}</td></tr>
+                <tr><th>Traslado</th><td>{{ object.traslado_qty }}</td></tr>
+                <tr><th>Renovaciones</th><td>{{ object.renovaciones_qty }}</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

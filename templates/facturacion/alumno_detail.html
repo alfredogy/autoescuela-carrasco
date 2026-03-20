@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ object.nombre }} - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col"><h2>{{ object.nombre }}</h2></div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:alumno_update' object.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Datos del alumno</strong></div>
+            <table class="table table-sm mb-0">
+                <tr><th>Nombre</th><td>{{ object.nombre }}</td></tr>
+                <tr><th>DNI</th><td>{{ object.dni }}</td></tr>
+                <tr><th>Direcci&oacute;n</th><td>{{ object.direccion }}</td></tr>
+                <tr><th>C.P.</th><td>{{ object.codigo_postal }}</td></tr>
+                <tr><th>Municipio</th><td>{{ object.municipio }}</td></tr>
+                <tr><th>Provincia</th><td>{{ object.provincia }}</td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header"><strong>Facturas ({{ facturas.count }})</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>N&ordm;</th><th>Fecha</th><th>Curso</th><th class="text-end">Total</th><th></th></tr></thead>
+                    <tbody>
+                    {% for f in facturas %}
+                    <tr>
+                        <td><a href="{% url 'facturacion:factura_detail' f.pk %}">{{ f.numero_factura }}</a></td>
+                        <td>{{ f.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ f.curso }}</td>
+                        <td class="text-end">{{ f.total|floatformat:2 }} &euro;</td>
+                        <td><a href="{% url 'facturacion:factura_pdf' f.pk %}" target="_blank"><i class="bi bi-file-pdf text-danger"></i></a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-muted text-center">Sin facturas</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+_pycache_/
+*.pyc
+*.pyo
+.venv/
+venv/
+db.sqlite3
+staticfiles/
+media/
+*.xlsx
+*.pdf
+facturas_pdf/
+*.log
+.env

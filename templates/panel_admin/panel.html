@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel de administración{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-shield-lock"></i> Panel de administración</h2>
+</div>
+
+<div class="row">
+    <!-- Usuarios -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Usuarios</h5>
+                <a href="{% url 'crear_usuario' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg"></i> Nuevo usuario
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if usuarios %}
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Sedes asignadas</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr>
+                            <td><i class="bi bi-person"></i> {{ u.username }}</td>
+                            <td>
+                                {% for s in u.perfil.autoescuelas.all %}
+                                    <span class="badge bg-secondary me-1">{{ s.nombre }}</span>
+                                {% empty %}
+                                    <span class="text-muted">Sin sedes</span>
+                                {% endfor %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'editar_usuario' u.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'eliminar_usuario' u.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted p-3 mb-0">No hay usuarios creados.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sedes -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Sedes</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for sede in autoescuelas %}
+                    <li class="list-group-item">
+                        <i class="bi bi-geo-alt text-primary"></i> {{ sede.nombre }}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted">No hay sedes configuradas.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

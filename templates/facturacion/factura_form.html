@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>{{ titulo }}</h2>
+
+<form method="post" id="factura-form">
+    {% csrf_token %}
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+            <li>{{ field }}: {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Columna izquierda: datos de la factura -->
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Datos de la factura</strong></div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Curso</label>
+                            {{ form.curso }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">N&ordm; Factura</label>
+                            {{ form.numero_factura_manual }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha</label>
+                            {{ form.fecha }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Total pagado</label>
+                            {{ form.total_pagado }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Tasas</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    {{ form.tasa_basica }}
+                                    <label class="form-check-label" for="id_tasa_basica">Tasa B&aacute;sica B</label>
+                                </div>
+                                <div class="form-check">
+                                    {{ form.tasa_a }}
+                                    <label class="form-check-label" for="id_tasa_a">Tasa A</label>
+                                </div>
+                                <div class="form-check">
+                                    {{ form.traslado }}
+                                    <label class="form-check-label" for="id_traslado">Traslado</label>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="form-label mb-0">Renovaciones:</label>
+                                    {{ form.renovaciones }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header"><strong>Datos del cliente</strong></div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">DNI</label>
+                            {{ form.dni_factura }}
+                            <small class="text-muted">Escribe para buscar alumno</small>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre y Apellidos</label>
+                            {{ form.nombre_factura }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Domicilio</label>
+                            {{ form.direccion_factura }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">C.P.</label>
+                            {{ form.cp_factura }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Municipio</label>
+                            {{ form.municipio_factura }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Provincia</label>
+                            {{ form.provincia_factura }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: preview -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><strong>Preview</strong></div>
+                <div class="card-body preview-box">
+                    <div class="mb-2">
+                        <small class="text-muted">Base Imponible</small>
+                        <div class="amount" id="preview-base">0.00 &euro;</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">IVA (21%)</small>
+                        <div class="amount" id="preview-iva">0.00 &euro;</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Tasas (exentas)</small>
+                        <div class="amount" id="preview-tasas">0.00 &euro;</div>
+                    </div>
+                    <hr>
+                    <div>
+                        <small class="text-muted">Total calculado</small>
+                        <div class="amount fs-4 text-primary" id="preview-total">0.00 &euro;</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-save"></i> Guardar factura
+                </button>
+                <button type="submit" name="_addanother" class="btn btn-outline-primary">
+                    <i class="bi bi-plus"></i> Guardar y crear otra
+                </button>
+                <a href="{% url 'facturacion:factura_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/factura_form.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Panel de Control - {{ anio }}</h2>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:factura_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nueva Factura
+        </a>
+    </div>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card card-stat border-primary">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Total Facturas</h6>
+                <h3>{{ total_facturas }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stat border-success">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Total Facturado</h6>
+                <h3>{{ totales.total_total|floatformat:2 }} &euro;</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stat border-warning">
+            <div class="card-body">
+                <h6 class="card-title text-muted">IVA Total</h6>
+                <h3>{{ totales.total_iva|floatformat:2 }} &euro;</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stat border-info">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Alumnos</h6>
+                <h3>{{ total_alumnos }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen por trimestre -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>Resumen por Trimestre</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Trimestre</th><th class="text-end">Facturas</th><th class="text-end">Total</th><th></th></tr></thead>
+                    <tbody>
+                    {% for t in trimestres %}
+                    <tr>
+                        <td>T{{ t.num }}</td>
+                        <td class="text-end">{{ t.facturas }}</td>
+                        <td class="text-end">{{ t.total|floatformat:2 }} &euro;</td>
+                        <td class="text-end">
+                            <a href="{% url 'facturacion:factura_list' %}?anio={{ anio }}&trimestre={{ t.num }}" class="btn btn-sm btn-outline-secondary">Ver</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>&Uacute;ltimas facturas</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>N&ordm;</th><th>Fecha</th><th>Alumno</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                    {% for f in ultimas_facturas %}
+                    <tr>
+                        <td><a href="{% url 'facturacion:factura_detail' f.pk %}">{{ f.numero_factura }}</a></td>
+                        <td>{{ f.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ f.nombre_factura|truncatechars:30 }}</td>
+                        <td class="text-end">{{ f.total|floatformat:2 }} &euro;</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

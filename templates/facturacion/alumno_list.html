@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Alumnos - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col"><h2>Alumnos ({{ total_alumnos }})</h2></div>
+    <div class="col-auto">
+        <a href="{% url 'facturacion:exportar_alumnos' %}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
+    </div>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width:400px">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre o DNI...">
+        <button class="btn btn-outline-primary">Buscar</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead class="table-dark">
+            <tr><th>Nombre</th><th>DNI</th><th>Direcci&oacute;n</th><th>Municipio</th><th>Provincia</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for a in object_list %}
+        <tr>
+            <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre }}</a></td>
+            <td>{{ a.dni }}</td>
+            <td>{{ a.direccion|truncatechars:30 }}</td>
+            <td>{{ a.municipio }}</td>
+            <td>{{ a.provincia }}</td>
+            <td><a href="{% url 'facturacion:alumno_update' a.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted">No hay alumnos</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_paginated %}
+<nav>
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}">&laquo;</a></li>{% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}">&raquo;</a></li>{% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

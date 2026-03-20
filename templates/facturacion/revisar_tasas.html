@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Tasas a Cero - Autoescuela Carrasco{% endblock %}
+
+{% block content %}
+<h2>Personas con Tasas = 0 - {{ anio }}</h2>
+
+<form method="get" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-auto">
+            <input type="number" name="anio" value="{{ anio }}" class="form-control" style="width:100px">
+        </div>
+        <div class="col-auto"><button class="btn btn-primary">Ver</button></div>
+    </div>
+</form>
+
+<p>Total: <strong>{{ total }}</strong> personas con tasas = 0 en todos sus trimestres.</p>
+
+{% if personas %}
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead class="table-dark">
+            <tr><th>#</th><th>Nombre</th><th>DNI</th><th>Trimestres</th><th>Facturas</th></tr>
+        </thead>
+        <tbody>
+        {% for p in personas %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="{% url 'facturacion:alumno_detail' p.alumno.pk %}">{{ p.alumno.nombre }}</a></td>
+            <td>{{ p.alumno.dni|default:"(sin DNI)" }}</td>
+            <td>{% for t in p.trimestres %}T{{ t }} {% endfor %}</td>
+            <td>{{ p.num_facturas }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-success">No se encontraron personas con tasas = 0.</div>
+{% endif %}
+{% endblock %}
