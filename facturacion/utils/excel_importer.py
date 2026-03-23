@@ -12,7 +12,7 @@ def normalize_dni(dni):
     return str(dni).upper().replace(' ', '').replace('-', '').strip()
 
 
-def importar_trimestre(file_obj, trimestre, anio):
+def importar_trimestre(file_obj, trimestre, anio, autoescuela):
     """
     Importa facturas desde un archivo Trimestre-X.xlsx.
     Headers: CURSO, Nº FACTURA, FECHA, NOMBRE Y APELLIDOS, DNI,
@@ -60,12 +60,12 @@ def importar_trimestre(file_obj, trimestre, anio):
         # Normalizar número de factura
         nfactura_str = normalizar_num_factura(nfactura_str, anio)
 
-        # Buscar o crear alumno
+        # Buscar o crear alumno (dirección opcional)
         alumno = None
         if dni:
-            dni_norm = normalize_dni(dni)
             alumno, created = Alumno.objects.get_or_create(
                 dni=dni,
+                autoescuela=autoescuela,
                 defaults={
                     'nombre': nombre,
                     'direccion': direccion,
@@ -82,8 +82,8 @@ def importar_trimestre(file_obj, trimestre, anio):
                 alumno.provincia = provincia
                 alumno.save()
 
-        # Crear factura (skip si ya existe)
-        if not Factura.objects.filter(numero_factura=nfactura_str).exists():
+        # Crear factura (skip si ya existe en esta autoescuela)
+        if not Factura.objects.filter(numero_factura=nfactura_str, autoescuela=autoescuela).exists():
             Factura.objects.create(
                 curso=curso,
                 numero_factura=nfactura_str,
@@ -101,6 +101,7 @@ def importar_trimestre(file_obj, trimestre, anio):
                 total=float(total),
                 trimestre=trimestre,
                 anio=anio,
+                autoescuela=autoescuela,
             )
             count += 1
 
@@ -124,7 +125,7 @@ def normalizar_num_factura(num_str, anio_default):
         return num_str
 
 
-def importar_listado(file_obj, trimestre, anio):
+def importar_listado(file_obj, trimestre, anio, autoescuela):
     """
     Importa datos de LISTADO FACT X TRI.xlsx (datos históricos con IVA incorrecto).
     """
@@ -165,6 +166,7 @@ def importar_listado(file_obj, trimestre, anio):
             numero_factura=nf,
             trimestre=trimestre,
             anio=anio,
+            autoescuela=autoescuela,
             defaults={
                 'neto': neto,
                 'iva_incorrecto': iva_val,

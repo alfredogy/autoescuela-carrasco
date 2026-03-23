@@ -53,6 +53,11 @@
                 <a href="{% url 'facturacion:exportar_trimestre' trimestre_filtro anio_filtro %}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
                 <a href="{% url 'facturacion:factura_pdf_lote' %}?anio={{ anio_filtro }}&trimestre={{ trimestre_filtro }}" class="btn btn-sm btn-danger"><i class="bi bi-file-pdf"></i> PDFs (ZIP)</a>
             </div>
+            {% elif anio_filtro %}
+            <div class="col-auto ms-auto">
+                <a href="{% url 'facturacion:exportar_anual' anio_filtro %}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+                <a href="{% url 'facturacion:factura_pdf_lote' %}?anio={{ anio_filtro }}" class="btn btn-sm btn-danger"><i class="bi bi-file-pdf"></i> PDFs (ZIP)</a>
+            </div>
             {% endif %}
         </form>
     </div>
