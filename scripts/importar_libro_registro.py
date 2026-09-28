@@ -64,7 +64,7 @@ def normalizar_nombre(nombre):
 def estado_apto_teorico(value):
     estado = texto(value).upper()
     if estado == 'EXENTO' or estado.startswith('VIENE DE A'):
-        return estado
+        return 'EXENTO'
     return ''
 
 
