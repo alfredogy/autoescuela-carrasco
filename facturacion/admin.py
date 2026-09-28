@@ -15,9 +15,9 @@ class ConfiguracionAdmin(admin.ModelAdmin):
 
 @admin.register(Alumno)
 class AlumnoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'dni', 'municipio', 'provincia')
+    list_display = ('nombre', 'dni', 'permiso', 'numero_registro', 'municipio', 'provincia')
     search_fields = ('nombre', 'dni')
-    list_filter = ('provincia',)
+    list_filter = ('permiso', 'provincia')
 
 
 @admin.register(Factura)

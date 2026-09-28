@@ -17,7 +17,7 @@ from django.conf import settings
 
 def generate_invoice_pdf(factura, output_buffer=None):
     """Genera un PDF de factura. Retorna un BytesIO."""
-    from facturacion.models import Configuracion
+    from facturacion.models import Configuracion, CURSOS_EXENTOS_IVA
 
     config = Configuracion.get_instance(factura.autoescuela)
     buffer = output_buffer or BytesIO()
@@ -96,7 +96,7 @@ def generate_invoice_pdf(factura, output_buffer=None):
     tasas_val = float(factura.tasas)
     conceptos = []
     tipo_curso = factura.curso or ''
-    es_curso_exento = tipo_curso in ('C', 'C+E')
+    es_curso_exento = tipo_curso in CURSOS_EXENTOS_IVA
 
     # Concepto principal (curso)
     importe_curso = float(factura.base_imponible) + float(factura.iva) if es_curso_exento else float(factura.base_imponible)

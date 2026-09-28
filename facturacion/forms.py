@@ -50,15 +50,37 @@ class FacturaForm(forms.ModelForm):
 class AlumnoForm(forms.ModelForm):
     class Meta:
         model = Alumno
-        fields = ['nombre', 'dni', 'direccion', 'codigo_postal', 'municipio', 'provincia']
+        fields = [
+            'nombre', 'nombre_pila', 'apellido1', 'apellido2', 'dni', 'direccion', 'codigo_postal', 'municipio', 'provincia',
+            'permiso', 'numero_registro', 'fecha_alta', 'fecha_nacimiento',
+            'fecha_inicio', 'fecha_fin', 'causa', 'observaciones', 'fecha_apto_teorico',
+        ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre_pila': forms.TextInput(attrs={'class': 'form-control'}),
+            'apellido1': forms.TextInput(attrs={'class': 'form-control'}),
+            'apellido2': forms.TextInput(attrs={'class': 'form-control'}),
             'dni': forms.TextInput(attrs={'class': 'form-control'}),
             'direccion': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_postal': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:120px'}),
             'municipio': forms.TextInput(attrs={'class': 'form-control'}),
             'provincia': forms.TextInput(attrs={'class': 'form-control'}),
+            'permiso': forms.Select(attrs={'class': 'form-select'}),
+            'numero_registro': forms.NumberInput(attrs={'class': 'form-control'}),
+            'fecha_alta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'causa': forms.TextInput(attrs={'class': 'form-control'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'fecha_apto_teorico': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('permiso') != 'B':
+            cleaned_data['numero_registro'] = None
+        return cleaned_data
 
 
 class ConfiguracionForm(forms.ModelForm):

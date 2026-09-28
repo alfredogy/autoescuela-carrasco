@@ -60,17 +60,47 @@ class Configuracion(models.Model):
         return obj
 
 
+PERMISO_CHOICES = [
+    ('AM', 'AM'),
+    ('AML', 'AML'),
+    ('A1', 'A1'),
+    ('A2', 'A2'),
+    ('A2 CON B', 'A2 CON B'),
+    ('A', 'A'),
+    ('B', 'B'),
+    ('B96', 'B96'),
+    ('B+E', 'B+E'),
+    ('C', 'C'),
+    ('C1', 'C1'),
+    ('C+E', 'C+E'),
+    ('D', 'D'),
+    ('D1', 'D1'),
+]
+
+
 class Alumno(models.Model):
     autoescuela = models.ForeignKey(
         Autoescuela, on_delete=models.CASCADE,
         related_name='alumnos', null=True, blank=True
     )
     nombre = models.CharField('Nombre y Apellidos', max_length=200)
+    nombre_pila = models.CharField('Nombre', max_length=100, blank=True, default='')
+    apellido1 = models.CharField('Primer apellido', max_length=100, blank=True, default='')
+    apellido2 = models.CharField('Segundo apellido', max_length=100, blank=True, default='')
     dni = models.CharField('DNI/NIE', max_length=20, blank=True, default='')
     direccion = models.CharField('Dirección', max_length=300, blank=True, default='')
     codigo_postal = models.CharField('C.P.', max_length=10, blank=True, default='')
     municipio = models.CharField('Municipio', max_length=100, blank=True, default='')
     provincia = models.CharField('Provincia', max_length=100, blank=True, default='VALENCIA')
+    permiso = models.CharField('Permiso', max_length=20, choices=PERMISO_CHOICES, blank=True, default='')
+    numero_registro = models.PositiveIntegerField('Nº registro', null=True, blank=True)
+    fecha_alta = models.DateField('Fecha de alta', null=True, blank=True)
+    fecha_nacimiento = models.DateField('Fecha de nacimiento', null=True, blank=True)
+    fecha_inicio = models.DateField('Fecha de inicio', null=True, blank=True)
+    fecha_fin = models.DateField('Fecha de fin', null=True, blank=True)
+    causa = models.CharField('Causa', max_length=200, blank=True, default='')
+    observaciones = models.TextField('Observaciones', blank=True, default='')
+    fecha_apto_teorico = models.DateField('Fecha apto teórico', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -95,9 +125,15 @@ CURSO_CHOICES = [
     ('A2', 'A2'),
     ('A', 'A'),
     ('B', 'B'),
+    ('B96', 'B96'),
+    ('B+E', 'B+E'),
     ('C', 'C'),
+    ('C1', 'C1'),
     ('C+E', 'C+E'),
+    ('D1', 'D1'),
 ]
+
+CURSOS_EXENTOS_IVA = ('C', 'C1', 'C+E', 'D1')
 
 TRIMESTRE_CHOICES = [
     (1, '1er Trimestre'),
@@ -159,7 +195,7 @@ class Factura(models.Model):
 
     @property
     def es_exento_iva(self):
-        return self.curso in ('C', 'C+E')
+        return self.curso in CURSOS_EXENTOS_IVA
 
     @property
     def numero_corto(self):

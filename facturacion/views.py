@@ -654,6 +654,25 @@ class AlumnoDetailView(AutoescuelaActivaMixin, DetailView):
         return ctx
 
 
+class AlumnoCreateView(AutoescuelaActivaMixin, CreateView):
+    model = Alumno
+    form_class = AlumnoForm
+    template_name = 'facturacion/alumno_form.html'
+
+    def form_valid(self, form):
+        form.instance.autoescuela = self.autoescuela_activa
+        messages.success(self.request, 'Alumno creado correctamente.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = 'Nuevo alumno'
+        return ctx
+
+
 class AlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
     model = Alumno
     form_class = AlumnoForm
@@ -663,11 +682,16 @@ class AlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
         return Alumno.objects.filter(autoescuela=self.autoescuela_activa)
 
     def get_success_url(self):
-        return self.object.get_absolute_url() if hasattr(self.object, 'get_absolute_url') else reverse_lazy('facturacion:alumno_list')
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
         messages.success(self.request, 'Alumno actualizado correctamente.')
         return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = 'Editar alumno'
+        return ctx
 
 
 # ============================================================
@@ -852,6 +876,18 @@ def exportar_alumnos_excel(request, autoescuela):
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
     response['Content-Disposition'] = 'attachment; filename="alumnos.xlsx"'
+    return response
+
+
+@con_autoescuela
+def exportar_registro_b_excel(request, autoescuela):
+    from .utils.excel_exporter import exportar_registro_b
+    buffer = exportar_registro_b(autoescuela)
+    response = HttpResponse(
+        buffer,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="LIBRO_REGISTRO_B.xlsx"'
     return response
 
 

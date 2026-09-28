@@ -15,11 +15,23 @@
             <div class="card-header"><strong>Datos del alumno</strong></div>
             <table class="table table-sm mb-0">
                 <tr><th>Nombre</th><td>{{ object.nombre }}</td></tr>
+                <tr><th>Nombre de pila</th><td>{{ object.nombre_pila }}</td></tr>
+                <tr><th>Primer apellido</th><td>{{ object.apellido1 }}</td></tr>
+                <tr><th>Segundo apellido</th><td>{{ object.apellido2 }}</td></tr>
                 <tr><th>DNI</th><td>{{ object.dni }}</td></tr>
                 <tr><th>Direcci&oacute;n</th><td>{{ object.direccion }}</td></tr>
                 <tr><th>C.P.</th><td>{{ object.codigo_postal }}</td></tr>
                 <tr><th>Municipio</th><td>{{ object.municipio }}</td></tr>
                 <tr><th>Provincia</th><td>{{ object.provincia }}</td></tr>
+                <tr><th>Permiso</th><td>{{ object.permiso }}</td></tr>
+                <tr><th>N&ordm; registro</th><td>{{ object.numero_registro|default_if_none:"" }}</td></tr>
+                <tr><th>Fecha de alta</th><td>{{ object.fecha_alta|date:"d/m/Y" }}</td></tr>
+                <tr><th>Fecha de nacimiento</th><td>{{ object.fecha_nacimiento|date:"d/m/Y" }}</td></tr>
+                <tr><th>Fecha de inicio</th><td>{{ object.fecha_inicio|date:"d/m/Y" }}</td></tr>
+                <tr><th>Fecha de fin</th><td>{{ object.fecha_fin|date:"d/m/Y" }}</td></tr>
+                <tr><th>Causa</th><td>{{ object.causa }}</td></tr>
+                <tr><th>Observaciones</th><td>{{ object.observaciones|linebreaksbr }}</td></tr>
+                <tr><th>Fecha apto te&oacute;rico</th><td>{{ object.fecha_apto_teorico|date:"d/m/Y" }}</td></tr>
             </table>
         </div>
     </div>

@@ -24,6 +24,7 @@ urlpatterns = [
 
     # Alumnos
     path('alumnos/', views.AlumnoListView.as_view(), name='alumno_list'),
+    path('alumnos/nuevo/', views.AlumnoCreateView.as_view(), name='alumno_create'),
     path('alumnos/<int:pk>/', views.AlumnoDetailView.as_view(), name='alumno_detail'),
     path('alumnos/<int:pk>/editar/', views.AlumnoUpdateView.as_view(), name='alumno_update'),
 
@@ -39,6 +40,7 @@ urlpatterns = [
     path('exportar/trimestre/<int:trimestre>/<int:anio>/', views.exportar_trimestre_excel, name='exportar_trimestre'),
     path('exportar/anual/<int:anio>/', views.exportar_anual_excel, name='exportar_anual'),
     path('exportar/alumnos/', views.exportar_alumnos_excel, name='exportar_alumnos'),
+    path('exportar/registro-b/', views.exportar_registro_b_excel, name='exportar_registro_b'),
     path('exportar/informe-iva/', views.exportar_informe_iva, name='exportar_informe_iva'),
 
     # Importación

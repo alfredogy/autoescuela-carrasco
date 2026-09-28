@@ -2,6 +2,8 @@ from decimal import Decimal, ROUND_HALF_UP
 
 
 def compute_components(total_paid, tasa_basica_qty, tasa_a_qty, traslado_qty, renovaciones_qty, curso='B', config=None):
+    from facturacion.models import CURSOS_EXENTOS_IVA
+
     if config is None:
         from facturacion.models import Configuracion
         config = Configuracion.objects.first()
@@ -26,7 +28,7 @@ def compute_components(total_paid, tasa_basica_qty, tasa_a_qty, traslado_qty, re
         base = Decimal('0.00')
         iva = Decimal('0.00')
     else:
-        if curso in ('C', 'C+E'):
+        if curso in CURSOS_EXENTOS_IVA:
             base = importe_after
             iva = Decimal('0.00')
         else:

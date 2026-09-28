@@ -1,6 +1,7 @@
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, PatternFill
 
 
 def exportar_facturas_excel(anio, autoescuela, trimestre=None):
@@ -72,6 +73,59 @@ def exportar_alumnos(autoescuela):
     col_widths = [35, 15, 40, 10, 20, 20]
     for i, w in enumerate(col_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def exportar_registro_b(autoescuela):
+    from facturacion.models import Alumno
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Libro registro B'
+
+    headers = [
+        'N_REG', 'F_ALTA', 'APELLIDO1', 'APELLIDO2', 'NOMBRE', 'DNI/NIF/NIE',
+        'F_NTO', 'PMS', 'F.INI', 'F.FIN', 'Causa', 'OBSERVACIONES', 'F.APT.TEOR',
+    ]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='1F4E78')
+
+    alumnos = Alumno.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
+        'numero_registro', 'nombre'
+    )
+    for alumno in alumnos:
+        ws.append([
+            alumno.numero_registro,
+            alumno.fecha_alta,
+            alumno.apellido1,
+            alumno.apellido2,
+            alumno.nombre_pila or alumno.nombre,
+            alumno.dni,
+            alumno.fecha_nacimiento,
+            alumno.permiso,
+            alumno.fecha_inicio,
+            alumno.fecha_fin,
+            alumno.causa,
+            alumno.observaciones,
+            alumno.fecha_apto_teorico,
+        ])
+
+    for row in ws.iter_rows(min_row=2, min_col=2, max_col=13):
+        for cell in row:
+            if cell.column in (2, 7, 9, 10, 13) and cell.value:
+                cell.number_format = 'DD/MM/YYYY'
+
+    widths = [10, 13, 22, 22, 25, 15, 13, 12, 13, 13, 18, 35, 15]
+    for index, width in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(index)].width = width
+    ws.freeze_panes = 'A2'
+    ws.auto_filter.ref = ws.dimensions
 
     buffer = BytesIO()
     wb.save(buffer)

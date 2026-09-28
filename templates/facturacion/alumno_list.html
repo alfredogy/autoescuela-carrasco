@@ -5,6 +5,8 @@
 <div class="row mb-3">
     <div class="col"><h2>Alumnos ({{ total_alumnos }})</h2></div>
     <div class="col-auto">
+        <a href="{% url 'facturacion:alumno_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo alumno</a>
+        <a href="{% url 'facturacion:exportar_registro_b' %}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Registro B</a>
         <a href="{% url 'facturacion:exportar_alumnos' %}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
     </div>
 </div>
@@ -19,20 +21,21 @@
 <div class="table-responsive">
     <table class="table table-sm table-striped">
         <thead class="table-dark">
-            <tr><th>Nombre</th><th>DNI</th><th>Direcci&oacute;n</th><th>Municipio</th><th>Provincia</th><th></th></tr>
+            <tr><th>Nombre</th><th>DNI</th><th>Permiso</th><th>N&ordm; reg.</th><th>Municipio</th><th>Provincia</th><th></th></tr>
         </thead>
         <tbody>
         {% for a in object_list %}
         <tr>
             <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre }}</a></td>
             <td>{{ a.dni }}</td>
-            <td>{{ a.direccion|truncatechars:30 }}</td>
+            <td>{{ a.permiso }}</td>
+            <td>{{ a.numero_registro|default_if_none:"" }}</td>
             <td>{{ a.municipio }}</td>
             <td>{{ a.provincia }}</td>
             <td><a href="{% url 'facturacion:alumno_update' a.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center text-muted">No hay alumnos</td></tr>
+        <tr><td colspan="7" class="text-center text-muted">No hay alumnos</td></tr>
         {% endfor %}
         </tbody>
     </table>
