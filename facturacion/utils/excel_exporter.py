@@ -1,7 +1,8 @@
 from io import BytesIO
+from datetime import date
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 
 def exportar_facturas_excel(anio, autoescuela, trimestre=None):
@@ -85,22 +86,80 @@ def exportar_registro_b(autoescuela):
 
     wb = Workbook()
     ws = wb.active
-    ws.title = 'Libro registro B'
+    ws.title = 'Hoja1'
+
+    texto_legal = (
+        'En cumplimiento de lo dispuesto en el artículo 39 del Reglamento regulador de las '
+        'Escuelas Particulares de Conductores aprobado por R.D. 1295/2003, de fecha 17 de '
+        'octubre, modificado por el R.D. 369/2010, de 26 de marzo, el presente libro de registro '
+        'informatizado de alumnos de la Escuela de Conductores V-0281-01, denominada Auto '
+        'Escuela La Albufera, S.L., con domicilio en Av. de La Albufera, Nº 18, de la localidad de '
+        'Alfafar (46910-Valencia), recoge las inscripciones de aquellos cuya fecha de '
+        'matriculación es posterior a fecha 01 de Julio de 2014, conservándose actualizado '
+        'diariamente hasta el día de la fecha.'
+    )
+    texto_resumen = (
+        'En cumplimiento de lo dispuesto en el artículo 39 del Reglamento regulador de las '
+        'Escuelas Particulares de Conductores aprobado por R.D. 1295/2003, de fecha 17 de octubre, '
+        'modificado por el R.D. 369/2010, de 26 de marzo, el presente libro de registro info'
+    )
+    meses = (
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    )
+    hoy = date.today()
+
+    ws.merge_cells('B1:M1')
+    ws['B1'] = texto_resumen
+    ws['B1'].font = Font(name='Aptos Narrow', size=11, bold=True)
+    ws['B1'].alignment = Alignment(vertical='center')
+
+    ws.merge_cells('B4:M4')
+    ws['B4'] = 'INFORMATIZADO'
+    ws['B4'].font = Font(name='Aptos Narrow', size=11, bold=True)
+    ws['B4'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws.merge_cells('B5:M8')
+    ws['B5'] = texto_legal
+    ws['B5'].font = Font(name='Arial', size=9, bold=True)
+    ws['B5'].alignment = Alignment(wrap_text=True, vertical='top')
+
+    ws.merge_cells('A10:M10')
+    ws['A10'] = f'Alfafar, a {hoy.day} de {meses[hoy.month - 1]} de {hoy.year}.'
+    ws['A10'].font = Font(name='Aptos Narrow', size=11)
+    ws['A10'].alignment = Alignment(vertical='center')
+
+    ws.row_dimensions[1].height = 15
+    ws.row_dimensions[4].height = 15
+    ws.row_dimensions[5].height = 15
+    ws.row_dimensions[6].height = 15
+    ws.row_dimensions[7].height = 15
+    ws.row_dimensions[8].height = 15
+    ws.row_dimensions[10].height = 15
+    ws.row_dimensions[11].height = 15.75
 
     headers = [
         'N_REG', 'F_ALTA', 'APELLIDO1', 'APELLIDO2', 'NOMBRE', 'DNI/NIF/NIE',
         'F_NTO', 'PMS', 'F.INI', 'F.FIN', 'Causa', 'OBSERVACIONES', 'F.APT.TEOR',
     ]
-    ws.append(headers)
-    for cell in ws[1]:
-        cell.font = Font(bold=True, color='FFFFFF')
-        cell.fill = PatternFill('solid', fgColor='1F4E78')
+    header_fill = PatternFill('solid', fgColor='D0D0D0')
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin'),
+    )
+    for column, header in enumerate(headers, 1):
+        cell = ws.cell(row=11, column=column, value=header)
+        cell.font = Font(name='Arial', size=7.5, bold=True)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = thin_border
 
     alumnos = Alumno.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
         'numero_registro', 'nombre'
     )
+    row_number = 12
     for alumno in alumnos:
-        ws.append([
+        values = [
             alumno.numero_registro,
             alumno.fecha_alta,
             alumno.apellido1,
@@ -114,18 +173,27 @@ def exportar_registro_b(autoescuela):
             alumno.causa,
             alumno.observaciones,
             alumno.fecha_apto_teorico,
-        ])
+        ]
+        for column, value in enumerate(values, 1):
+            cell = ws.cell(row=row_number, column=column, value=value)
+            cell.font = Font(name='Arial', size=8)
+            cell.border = thin_border
+            cell.alignment = Alignment(vertical='center', wrap_text=column == 12)
+        row_number += 1
 
-    for row in ws.iter_rows(min_row=2, min_col=2, max_col=13):
+    for row in ws.iter_rows(min_row=12, min_col=2, max_col=13):
         for cell in row:
             if cell.column in (2, 7, 9, 10, 13) and cell.value:
                 cell.number_format = 'DD/MM/YYYY'
 
-    widths = [10, 13, 22, 22, 25, 15, 13, 12, 13, 13, 18, 35, 15]
+    widths = [10.71, 10.71, 14.14, 15.57, 21.43, 11.71, 11.43, 10.71, 0, 10.71, 10.71, 39.14, 11.14]
     for index, width in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(index)].width = width
-    ws.freeze_panes = 'A2'
-    ws.auto_filter.ref = ws.dimensions
+    ws.freeze_panes = 'A12'
+    ws.auto_filter.ref = f'A11:M{max(row_number - 1, 11)}'
+    ws.page_setup.orientation = 'landscape'
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
 
     buffer = BytesIO()
     wb.save(buffer)

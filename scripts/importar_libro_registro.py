@@ -1,4 +1,4 @@
-"""Importa una única vez el libro de registro de alumnos desde Excel."""
+"""Importa el registro B desde Excel y lo vincula con los alumnos existentes."""
 import argparse
 import os
 import sys
@@ -18,7 +18,7 @@ django.setup()
 
 from django.db import transaction
 
-from facturacion.models import Alumno, Autoescuela
+from facturacion.models import Alumno, Autoescuela, Factura
 
 
 def normalizar_dni(value):
@@ -50,10 +50,11 @@ def nombre_completo(apellido1, apellido2, nombre):
     return ' '.join(parte for parte in (texto(apellido1), texto(apellido2), texto(nombre)) if parte)
 
 
-def numero_registro(value):
-    if value in (None, ''):
-        return None
-    return int(value)
+def clave_alumno(dni, nombre, nacimiento):
+    dni_normalizado = normalizar_dni(dni)
+    if dni_normalizado:
+        return f'dni:{dni_normalizado}'
+    return f'datos:{nombre.upper()}:{nacimiento or ""}'
 
 
 def importar(path, nombre_autoescuela, dry_run=False):
@@ -71,8 +72,9 @@ def importar(path, nombre_autoescuela, dry_run=False):
         if missing:
             raise ValueError(f'Faltan columnas requeridas: {", ".join(sorted(missing))}')
 
-        creados = actualizados = omitidos = 0
+        creados = actualizados = omitidos = no_b = duplicados = facturas_enlazadas = 0
         avisos = []
+        alumnos_procesados = set()
         with transaction.atomic():
             for numero_fila, row in enumerate(worksheet.iter_rows(min_row=12, values_only=True), start=12):
                 if not any(value not in (None, '') for value in row):
@@ -84,6 +86,10 @@ def importar(path, nombre_autoescuela, dry_run=False):
                 def fecha_celda(header):
                     return fecha(value(header), avisos, numero_fila, header)
 
+                if texto(value('PMS')) != 'B':
+                    no_b += 1
+                    continue
+
                 alumno_nombre = nombre_completo(value('APELLIDO1'), value('APELLIDO2'), value('NOMBRE'))
                 dni = texto(value('DNI/NIF/NIE'))
                 if not alumno_nombre:
@@ -91,6 +97,12 @@ def importar(path, nombre_autoescuela, dry_run=False):
                     continue
 
                 nacimiento = fecha_celda('F_NTO')
+                clave = clave_alumno(dni, alumno_nombre, nacimiento)
+                if clave in alumnos_procesados:
+                    duplicados += 1
+                    continue
+                alumnos_procesados.add(clave)
+
                 dni_normalizado = normalizar_dni(dni)
                 if dni_normalizado:
                     alumnos = [
@@ -107,14 +119,15 @@ def importar(path, nombre_autoescuela, dry_run=False):
                 if len(alumnos) > 1:
                     raise ValueError(f'Hay varios alumnos para {alumno_nombre} ({dni or "sin DNI"}).')
 
+                numero_registro = len(alumnos_procesados)
                 defaults = {
                     'nombre': alumno_nombre,
                     'nombre_pila': texto(value('NOMBRE')),
                     'apellido1': texto(value('APELLIDO1')),
                     'apellido2': texto(value('APELLIDO2')),
                     'dni': dni,
-                    'permiso': texto(value('PMS')),
-                    'numero_registro': numero_registro(value('N_REG')),
+                    'permiso': 'B',
+                    'numero_registro': numero_registro,
                     'fecha_alta': fecha_celda('F_ALTA'),
                     'fecha_nacimiento': nacimiento,
                     'fecha_inicio': fecha_celda('F.INI'),
@@ -130,13 +143,22 @@ def importar(path, nombre_autoescuela, dry_run=False):
                     alumno.save()
                     actualizados += 1
                 else:
-                    Alumno.objects.create(autoescuela=autoescuela, **defaults)
+                    alumno = Alumno.objects.create(autoescuela=autoescuela, **defaults)
                     creados += 1
+
+                if dni_normalizado:
+                    for factura in Factura.objects.filter(
+                        autoescuela=autoescuela, curso='B', alumno__isnull=True
+                    ):
+                        if normalizar_dni(factura.dni_factura) == dni_normalizado:
+                            factura.alumno = alumno
+                            factura.save(update_fields=['alumno'])
+                            facturas_enlazadas += 1
 
             if dry_run:
                 transaction.set_rollback(True)
 
-        return creados, actualizados, omitidos, avisos
+        return creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas, avisos
     finally:
         workbook.close()
 
@@ -148,9 +170,15 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Valida sin guardar cambios')
     args = parser.parse_args()
 
-    creados, actualizados, omitidos, avisos = importar(args.archivo, args.autoescuela, args.dry_run)
+    creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas, avisos = importar(
+        args.archivo, args.autoescuela, args.dry_run
+    )
     accion = 'Validación terminada' if args.dry_run else 'Importación terminada'
-    print(f'{accion}: {creados} creados, {actualizados} actualizados, {omitidos} omitidos.')
+    print(
+        f'{accion}: {creados} creados, {actualizados} actualizados, '
+        f'{duplicados} duplicados B ignorados, {no_b} filas de otros permisos omitidas, '
+        f'{facturas_enlazadas} facturas B enlazadas, {omitidos} filas sin nombre.'
+    )
     for aviso in avisos:
         print(f'AVISO: {aviso}')
 
