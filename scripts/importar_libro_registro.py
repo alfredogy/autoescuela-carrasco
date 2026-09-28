@@ -57,6 +57,30 @@ def clave_alumno(dni, nombre, nacimiento):
     return f'datos:{nombre.upper()}:{nacimiento or ""}'
 
 
+def normalizar_nombre(nombre):
+    return ' '.join(sorted(texto(nombre).upper().split()))
+
+
+def consolidar_duplicados(alumnos, nombre_excel):
+    """Conserva el alumno más antiguo cuando los duplicados son la misma persona."""
+    if len(alumnos) <= 1:
+        return alumnos[0] if alumnos else None, 0
+
+    if any(normalizar_nombre(alumno.nombre) != normalizar_nombre(nombre_excel) for alumno in alumnos):
+        raise ValueError(f'Hay varios alumnos distintos para {nombre_excel}.')
+
+    alumnos = sorted(alumnos, key=lambda alumno: alumno.pk)
+    alumno_principal = alumnos[0]
+    for alumno_duplicado in alumnos[1:]:
+        for campo in ('direccion', 'codigo_postal', 'municipio', 'provincia'):
+            if not getattr(alumno_principal, campo) and getattr(alumno_duplicado, campo):
+                setattr(alumno_principal, campo, getattr(alumno_duplicado, campo))
+        Factura.objects.filter(alumno=alumno_duplicado).update(alumno=alumno_principal)
+        alumno_duplicado.delete()
+    alumno_principal.save()
+    return alumno_principal, len(alumnos) - 1
+
+
 def importar(path, nombre_autoescuela, dry_run=False):
     autoescuela = Autoescuela.objects.get(nombre=nombre_autoescuela)
     workbook = load_workbook(path, read_only=True, data_only=True)
@@ -72,7 +96,7 @@ def importar(path, nombre_autoescuela, dry_run=False):
         if missing:
             raise ValueError(f'Faltan columnas requeridas: {", ".join(sorted(missing))}')
 
-        creados = actualizados = omitidos = no_b = duplicados = facturas_enlazadas = 0
+        creados = actualizados = omitidos = no_b = duplicados = facturas_enlazadas = alumnos_fusionados = 0
         avisos = []
         alumnos_procesados = set()
         with transaction.atomic():
@@ -116,8 +140,9 @@ def importar(path, nombre_autoescuela, dry_run=False):
                         fecha_nacimiento=nacimiento,
                     ))
 
-                if len(alumnos) > 1:
-                    raise ValueError(f'Hay varios alumnos para {alumno_nombre} ({dni or "sin DNI"}).')
+                alumno_existente, fusionados = consolidar_duplicados(alumnos, alumno_nombre)
+                alumnos_fusionados += fusionados
+                alumnos = [alumno_existente] if alumno_existente else []
 
                 numero_registro = len(alumnos_procesados)
                 defaults = {
@@ -158,7 +183,10 @@ def importar(path, nombre_autoescuela, dry_run=False):
             if dry_run:
                 transaction.set_rollback(True)
 
-        return creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas, avisos
+        return (
+            creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas,
+            alumnos_fusionados, avisos,
+        )
     finally:
         workbook.close()
 
@@ -170,14 +198,15 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Valida sin guardar cambios')
     args = parser.parse_args()
 
-    creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas, avisos = importar(
+    creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas, alumnos_fusionados, avisos = importar(
         args.archivo, args.autoescuela, args.dry_run
     )
     accion = 'Validación terminada' if args.dry_run else 'Importación terminada'
     print(
         f'{accion}: {creados} creados, {actualizados} actualizados, '
         f'{duplicados} duplicados B ignorados, {no_b} filas de otros permisos omitidas, '
-        f'{facturas_enlazadas} facturas B enlazadas, {omitidos} filas sin nombre.'
+        f'{facturas_enlazadas} facturas B enlazadas, {alumnos_fusionados} alumnos duplicados fusionados, '
+        f'{omitidos} filas sin nombre.'
     )
     for aviso in avisos:
         print(f'AVISO: {aviso}')
