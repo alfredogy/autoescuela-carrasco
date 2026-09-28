@@ -172,7 +172,7 @@ def exportar_registro_b(autoescuela):
             alumno.fecha_fin,
             alumno.causa,
             alumno.observaciones,
-            alumno.fecha_apto_teorico,
+            alumno.fecha_apto_teorico or alumno.estado_apto_teorico,
         ]
         for column, value in enumerate(values, 1):
             cell = ws.cell(row=row_number, column=column, value=value)

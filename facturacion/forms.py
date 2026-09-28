@@ -53,7 +53,7 @@ class AlumnoForm(forms.ModelForm):
         fields = [
             'nombre', 'nombre_pila', 'apellido1', 'apellido2', 'dni', 'direccion', 'codigo_postal', 'municipio', 'provincia',
             'permiso', 'numero_registro', 'fecha_alta', 'fecha_nacimiento',
-            'fecha_inicio', 'fecha_fin', 'causa', 'observaciones', 'fecha_apto_teorico',
+            'fecha_inicio', 'fecha_fin', 'causa', 'observaciones', 'fecha_apto_teorico', 'estado_apto_teorico',
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
@@ -74,6 +74,7 @@ class AlumnoForm(forms.ModelForm):
             'causa': forms.TextInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'fecha_apto_teorico': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'estado_apto_teorico': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'EXENTO, VIENE DE A1...'}),
         }
 
     def clean(self):

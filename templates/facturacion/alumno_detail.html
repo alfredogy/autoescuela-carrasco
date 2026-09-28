@@ -31,7 +31,7 @@
                 <tr><th>Fecha de fin</th><td>{{ object.fecha_fin|date:"d/m/Y" }}</td></tr>
                 <tr><th>Causa</th><td>{{ object.causa }}</td></tr>
                 <tr><th>Observaciones</th><td>{{ object.observaciones|linebreaksbr }}</td></tr>
-                <tr><th>Fecha apto te&oacute;rico</th><td>{{ object.fecha_apto_teorico|date:"d/m/Y" }}</td></tr>
+                <tr><th>Apto te&oacute;rico</th><td>{% if object.fecha_apto_teorico %}{{ object.fecha_apto_teorico|date:"d/m/Y" }}{% else %}{{ object.estado_apto_teorico }}{% endif %}</td></tr>
             </table>
         </div>
     </div>

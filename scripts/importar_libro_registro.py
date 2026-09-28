@@ -61,6 +61,13 @@ def normalizar_nombre(nombre):
     return ' '.join(sorted(texto(nombre).upper().split()))
 
 
+def estado_apto_teorico(value):
+    estado = texto(value).upper()
+    if estado == 'EXENTO' or estado.startswith('VIENE DE A'):
+        return estado
+    return ''
+
+
 def consolidar_duplicados(alumnos, nombre_excel):
     """Conserva el alumno más antiguo cuando los duplicados son la misma persona."""
     if len(alumnos) <= 1:
@@ -145,6 +152,8 @@ def importar(path, nombre_autoescuela, dry_run=False):
                 alumnos = [alumno_existente] if alumno_existente else []
 
                 numero_registro = len(alumnos_procesados)
+                apto_teorico = value('F.APT.TEOR')
+                estado_apto = estado_apto_teorico(apto_teorico)
                 defaults = {
                     'nombre': alumno_nombre,
                     'nombre_pila': texto(value('NOMBRE')),
@@ -159,7 +168,8 @@ def importar(path, nombre_autoescuela, dry_run=False):
                     'fecha_fin': fecha_celda('F.FIN'),
                     'causa': texto(value('CAUSA')),
                     'observaciones': texto(value('OBSERVACIONES')),
-                    'fecha_apto_teorico': fecha_celda('F.APT.TEOR'),
+                    'fecha_apto_teorico': None if estado_apto else fecha_celda('F.APT.TEOR'),
+                    'estado_apto_teorico': estado_apto,
                 }
                 if alumnos:
                     alumno = alumnos[0]

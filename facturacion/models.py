@@ -101,6 +101,7 @@ class Alumno(models.Model):
     causa = models.CharField('Causa', max_length=200, blank=True, default='')
     observaciones = models.TextField('Observaciones', blank=True, default='')
     fecha_apto_teorico = models.DateField('Fecha apto teórico', null=True, blank=True)
+    estado_apto_teorico = models.CharField('Estado apto teórico', max_length=50, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
