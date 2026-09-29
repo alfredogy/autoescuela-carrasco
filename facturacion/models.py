@@ -119,6 +119,45 @@ class Alumno(models.Model):
             return ''
         return self.dni.upper().replace(' ', '').replace('-', '').strip()
 
+    @property
+    def registro_principal(self):
+        return self.registros.filter(fecha_fin__isnull=True).order_by('-fecha_alta', '-pk').first() or \
+            self.registros.order_by('-fecha_alta', '-pk').first()
+
+
+class RegistroAlumno(models.Model):
+    autoescuela = models.ForeignKey(Autoescuela, on_delete=models.CASCADE, related_name='registros_alumnos')
+    alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE, related_name='registros')
+    permiso = models.CharField('Permiso', max_length=20, choices=PERMISO_CHOICES)
+    numero_registro = models.PositiveIntegerField('Nº registro', null=True, blank=True)
+    fecha_alta = models.DateField('Fecha de alta', null=True, blank=True)
+    fecha_inicio = models.DateField('Fecha de inicio', null=True, blank=True)
+    fecha_fin = models.DateField('Fecha de fin', null=True, blank=True)
+    causa = models.CharField('Causa', max_length=200, blank=True, default='')
+    observaciones = models.TextField('Observaciones', blank=True, default='')
+    fecha_apto_teorico = models.DateField('Fecha apto teórico', null=True, blank=True)
+    estado_apto_teorico = models.CharField('Estado apto teórico', max_length=50, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-fecha_alta', '-pk']
+        verbose_name = 'Registro de Alumno'
+        verbose_name_plural = 'Registros de Alumnos'
+
+    def __str__(self):
+        return f'{self.alumno.nombre} - {self.permiso} #{self.numero_registro or "sin número"}'
+
+    def save(self, *args, **kwargs):
+        if self.permiso == 'B' and self.numero_registro is None and self.autoescuela_id:
+            ultimo_numero = RegistroAlumno.objects.filter(
+                autoescuela=self.autoescuela, permiso='B'
+            ).order_by('-numero_registro').values_list('numero_registro', flat=True).first() or 0
+            self.numero_registro = ultimo_numero + 1
+        elif self.permiso != 'B':
+            self.numero_registro = None
+        super().save(*args, **kwargs)
+
 
 CURSO_CHOICES = [
     ('AM', 'AM'),

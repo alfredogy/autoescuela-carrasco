@@ -15,8 +15,8 @@ from django.views.generic import (
     TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 )
 
-from .models import Factura, Alumno, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES
-from .forms import FacturaForm, AlumnoForm, ConfiguracionForm, ImportarExcelForm, UsuarioForm
+from .models import Factura, Alumno, RegistroAlumno, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES
+from .forms import FacturaForm, AlumnoForm, RegistroAlumnoForm, ConfiguracionForm, ImportarExcelForm, UsuarioForm
 from .utils.calculos import compute_components, next_invoice_number, find_missing_invoices
 from .utils.dni_validator import validar_dni
 from .utils.iva_comparator import comparar_iva_anual
@@ -651,6 +651,10 @@ class AlumnoDetailView(AutoescuelaActivaMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['facturas'] = self.object.facturas.all().order_by('-fecha')
+        ctx['registro_principal'] = self.object.registro_principal
+        ctx['registros_historicos'] = self.object.registros.exclude(
+            pk=ctx['registro_principal'].pk if ctx['registro_principal'] else None
+        )
         return ctx
 
 
@@ -660,12 +664,21 @@ class AlumnoCreateView(AutoescuelaActivaMixin, CreateView):
     template_name = 'facturacion/alumno_form.html'
 
     def form_valid(self, form):
+        dni = form.cleaned_data.get('dni', '')
+        dni_normalizado = dni.upper().replace(' ', '').replace('-', '').strip()
+        if dni_normalizado:
+            existente = next((alumno for alumno in Alumno.objects.filter(
+                autoescuela=self.autoescuela_activa
+            ) if alumno.dni_normalizado == dni_normalizado), None)
+            if existente:
+                messages.info(self.request, 'El alumno ya existe. Crea un nuevo registro desde su ficha.')
+                return redirect('facturacion:alumno_detail', pk=existente.pk)
         form.instance.autoescuela = self.autoescuela_activa
         messages.success(self.request, 'Alumno creado correctamente.')
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.pk})
+        return reverse_lazy('facturacion:registro_create', kwargs={'alumno_pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -691,6 +704,63 @@ class AlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['titulo'] = 'Editar alumno'
+        return ctx
+
+
+class RegistroAlumnoCreateView(AutoescuelaActivaMixin, CreateView):
+    model = RegistroAlumno
+    form_class = RegistroAlumnoForm
+    template_name = 'facturacion/registro_form.html'
+
+    def get_alumno(self):
+        return get_object_or_404(Alumno, pk=self.kwargs['alumno_pk'], autoescuela=self.autoescuela_activa)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['autoescuela'] = self.autoescuela_activa
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['permiso'] = 'B'
+        return initial
+
+    def form_valid(self, form):
+        form.instance.alumno = self.get_alumno()
+        form.instance.autoescuela = self.autoescuela_activa
+        messages.success(self.request, 'Registro creado correctamente.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.kwargs['alumno_pk']})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = 'Nueva matrícula'
+        ctx['alumno'] = self.get_alumno()
+        return ctx
+
+
+class RegistroAlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
+    model = RegistroAlumno
+    form_class = RegistroAlumnoForm
+    template_name = 'facturacion/registro_form.html'
+
+    def get_queryset(self):
+        return RegistroAlumno.objects.filter(autoescuela=self.autoescuela_activa)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['autoescuela'] = self.autoescuela_activa
+        return kwargs
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.alumno_id})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo'] = 'Editar registro'
+        ctx['alumno'] = self.object.alumno
         return ctx
 
 

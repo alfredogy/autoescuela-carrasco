@@ -5,6 +5,7 @@
 <div class="row mb-3">
     <div class="col"><h2>{{ object.nombre }}</h2></div>
     <div class="col-auto">
+        <a href="{% url 'facturacion:registro_create' object.pk %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nueva matr&iacute;cula</a>
         <a href="{% url 'facturacion:alumno_update' object.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
     </div>
 </div>
@@ -14,8 +15,7 @@
         <div class="card mb-3">
             <div class="card-header"><strong>Datos del alumno</strong></div>
             <table class="table table-sm mb-0">
-                <tr><th>Nombre</th><td>{{ object.nombre }}</td></tr>
-                <tr><th>Nombre de pila</th><td>{{ object.nombre_pila }}</td></tr>
+                <tr><th>Nombre</th><td>{{ object.nombre_pila }}</td></tr>
                 <tr><th>Primer apellido</th><td>{{ object.apellido1 }}</td></tr>
                 <tr><th>Segundo apellido</th><td>{{ object.apellido2 }}</td></tr>
                 <tr><th>DNI</th><td>{{ object.dni }}</td></tr>
@@ -23,19 +23,33 @@
                 <tr><th>C.P.</th><td>{{ object.codigo_postal }}</td></tr>
                 <tr><th>Municipio</th><td>{{ object.municipio }}</td></tr>
                 <tr><th>Provincia</th><td>{{ object.provincia }}</td></tr>
-                <tr><th>Permiso</th><td>{{ object.permiso }}</td></tr>
-                <tr><th>N&ordm; registro</th><td>{{ object.numero_registro|default_if_none:"" }}</td></tr>
-                <tr><th>Fecha de alta</th><td>{{ object.fecha_alta|date:"d/m/Y" }}</td></tr>
                 <tr><th>Fecha de nacimiento</th><td>{{ object.fecha_nacimiento|date:"d/m/Y" }}</td></tr>
-                <tr><th>Fecha de inicio</th><td>{{ object.fecha_inicio|date:"d/m/Y" }}</td></tr>
-                <tr><th>Fecha de fin</th><td>{{ object.fecha_fin|date:"d/m/Y" }}</td></tr>
-                <tr><th>Causa</th><td>{{ object.causa }}</td></tr>
-                <tr><th>Observaciones</th><td>{{ object.observaciones|linebreaksbr }}</td></tr>
-                <tr><th>Apto te&oacute;rico</th><td>{% if object.fecha_apto_teorico %}{{ object.fecha_apto_teorico|date:"d/m/Y" }}{% else %}{{ object.estado_apto_teorico }}{% endif %}</td></tr>
             </table>
         </div>
     </div>
     <div class="col-md-7">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between"><strong>Registro principal</strong>{% if registro_principal %}<a href="{% url 'facturacion:registro_update' registro_principal.pk %}"><i class="bi bi-pencil"></i></a>{% endif %}</div>
+            <table class="table table-sm mb-0">
+                {% if registro_principal %}
+                <tr><th>Permiso</th><td>{{ registro_principal.permiso }}</td></tr>
+                <tr><th>N&ordm; registro</th><td>{{ registro_principal.numero_registro|default_if_none:"" }}</td></tr>
+                <tr><th>Fecha de alta</th><td>{{ registro_principal.fecha_alta|date:"d/m/Y" }}</td></tr>
+                <tr><th>Fecha de inicio</th><td>{{ registro_principal.fecha_inicio|date:"d/m/Y" }}</td></tr>
+                <tr><th>Fecha de fin</th><td>{{ registro_principal.fecha_fin|date:"d/m/Y" }}</td></tr>
+                <tr><th>Causa</th><td>{{ registro_principal.causa }}</td></tr>
+                <tr><th>Observaciones</th><td>{{ registro_principal.observaciones|linebreaksbr }}</td></tr>
+                <tr><th>Apto te&oacute;rico</th><td>{% if registro_principal.fecha_apto_teorico %}{{ registro_principal.fecha_apto_teorico|date:"d/m/Y" }}{% else %}{{ registro_principal.estado_apto_teorico }}{% endif %}</td></tr>
+                {% else %}<tr><td class="text-muted text-center">Sin registros</td></tr>{% endif %}
+            </table>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header"><strong>Hist&oacute;rico de registros</strong></div>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Permiso</th><th>N&ordm; reg.</th><th>Alta</th><th>Fin</th><th></th></tr></thead>
+                <tbody>{% for registro in registros_historicos %}<tr><td>{{ registro.permiso }}</td><td>{{ registro.numero_registro|default_if_none:"" }}</td><td>{{ registro.fecha_alta|date:"d/m/Y" }}</td><td>{{ registro.fecha_fin|date:"d/m/Y" }}</td><td><a href="{% url 'facturacion:registro_update' registro.pk %}"><i class="bi bi-pencil"></i></a></td></tr>{% empty %}<tr><td colspan="5" class="text-muted text-center">Sin registros anteriores</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
         <div class="card">
             <div class="card-header"><strong>Facturas ({{ facturas.count }})</strong></div>
             <div class="card-body p-0">

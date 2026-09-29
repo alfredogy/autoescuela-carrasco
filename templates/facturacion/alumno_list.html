@@ -28,8 +28,8 @@
         <tr>
             <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre }}</a></td>
             <td>{{ a.dni }}</td>
-            <td>{{ a.permiso }}</td>
-            <td>{{ a.numero_registro|default_if_none:"" }}</td>
+            <td>{{ a.registro_principal.permiso }}</td>
+            <td>{{ a.registro_principal.numero_registro|default_if_none:"" }}</td>
             <td>{{ a.municipio }}</td>
             <td>{{ a.provincia }}</td>
             <td><a href="{% url 'facturacion:alumno_update' a.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>

@@ -18,7 +18,7 @@ django.setup()
 
 from django.db import transaction
 
-from facturacion.models import Alumno, Autoescuela, Factura
+from facturacion.models import Alumno, RegistroAlumno, Autoescuela, Factura
 
 
 def normalizar_dni(value):
@@ -83,6 +83,7 @@ def consolidar_duplicados(alumnos, nombre_excel):
             if not getattr(alumno_principal, campo) and getattr(alumno_duplicado, campo):
                 setattr(alumno_principal, campo, getattr(alumno_duplicado, campo))
         Factura.objects.filter(alumno=alumno_duplicado).update(alumno=alumno_principal)
+        RegistroAlumno.objects.filter(alumno=alumno_duplicado).update(alumno=alumno_principal)
         alumno_duplicado.delete()
     alumno_principal.save()
     return alumno_principal, len(alumnos) - 1
@@ -154,16 +155,18 @@ def importar(path, nombre_autoescuela, dry_run=False):
                 numero_registro = len(alumnos_procesados)
                 apto_teorico = value('F.APT.TEOR')
                 estado_apto = estado_apto_teorico(apto_teorico)
-                defaults = {
+                datos_alumno = {
                     'nombre': alumno_nombre,
                     'nombre_pila': texto(value('NOMBRE')),
                     'apellido1': texto(value('APELLIDO1')),
                     'apellido2': texto(value('APELLIDO2')),
                     'dni': dni,
+                    'fecha_nacimiento': nacimiento,
+                }
+                datos_registro = {
                     'permiso': 'B',
                     'numero_registro': numero_registro,
                     'fecha_alta': fecha_celda('F_ALTA'),
-                    'fecha_nacimiento': nacimiento,
                     'fecha_inicio': fecha_celda('F.INI'),
                     'fecha_fin': fecha_celda('F.FIN'),
                     'causa': texto(value('CAUSA')),
@@ -173,13 +176,25 @@ def importar(path, nombre_autoescuela, dry_run=False):
                 }
                 if alumnos:
                     alumno = alumnos[0]
-                    for field, field_value in defaults.items():
+                    for field, field_value in datos_alumno.items():
                         setattr(alumno, field, field_value)
                     alumno.save()
                     actualizados += 1
                 else:
-                    alumno = Alumno.objects.create(autoescuela=autoescuela, **defaults)
+                    alumno = Alumno.objects.create(autoescuela=autoescuela, **datos_alumno)
                     creados += 1
+
+                registro = RegistroAlumno.objects.filter(
+                    autoescuela=autoescuela, permiso='B', numero_registro=numero_registro
+                ).first()
+                if registro and registro.alumno_id != alumno.pk:
+                    raise ValueError(f'El registro B #{numero_registro} ya pertenece a otro alumno.')
+                if registro:
+                    for field, field_value in datos_registro.items():
+                        setattr(registro, field, field_value)
+                    registro.save()
+                else:
+                    RegistroAlumno.objects.create(autoescuela=autoescuela, alumno=alumno, **datos_registro)
 
                 if dni_normalizado:
                     for factura in Factura.objects.filter(

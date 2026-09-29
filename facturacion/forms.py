@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Factura, Alumno, Configuracion, Autoescuela, CURSO_CHOICES
+from .models import Factura, Alumno, RegistroAlumno, Configuracion, Autoescuela, CURSO_CHOICES
 
 
 class FacturaForm(forms.ModelForm):
@@ -10,7 +10,7 @@ class FacturaForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'id': 'id_total_pagado'})
     )
     tasa_basica = forms.BooleanField(
-        label='Tasa Básica B', required=False,
+        label='Tasa Básica', required=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_tasa_basica'})
     )
     tasa_a = forms.BooleanField(
@@ -52,11 +52,10 @@ class AlumnoForm(forms.ModelForm):
         model = Alumno
         fields = [
             'nombre', 'nombre_pila', 'apellido1', 'apellido2', 'dni', 'direccion', 'codigo_postal', 'municipio', 'provincia',
-            'permiso', 'numero_registro', 'fecha_alta', 'fecha_nacimiento',
-            'fecha_inicio', 'fecha_fin', 'causa', 'observaciones', 'fecha_apto_teorico', 'estado_apto_teorico',
+            'fecha_nacimiento',
         ]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'nombre': forms.HiddenInput(),
             'nombre_pila': forms.TextInput(attrs={'class': 'form-control'}),
             'apellido1': forms.TextInput(attrs={'class': 'form-control'}),
             'apellido2': forms.TextInput(attrs={'class': 'form-control'}),
@@ -65,17 +64,58 @@ class AlumnoForm(forms.ModelForm):
             'codigo_postal': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:120px'}),
             'municipio': forms.TextInput(attrs={'class': 'form-control'}),
             'provincia': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha_alta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nombre'].required = False
+        self.fields['nombre_pila'].required = True
+        if self.instance.pk and not self.instance.nombre_pila:
+            self.initial['nombre_pila'] = self.instance.nombre
+
+    def clean(self):
+        cleaned_data = super().clean()
+        nombre_completo = ' '.join(
+            parte for parte in (
+                cleaned_data.get('apellido1', ''),
+                cleaned_data.get('apellido2', ''),
+                cleaned_data.get('nombre_pila', ''),
+            ) if parte
+        )
+        self.instance.nombre = nombre_completo
+        cleaned_data['nombre'] = nombre_completo
+        return cleaned_data
+
+
+class RegistroAlumnoForm(forms.ModelForm):
+    class Meta:
+        model = RegistroAlumno
+        fields = [
+            'permiso', 'numero_registro', 'fecha_alta', 'fecha_inicio', 'fecha_fin',
+            'causa', 'observaciones', 'fecha_apto_teorico', 'estado_apto_teorico',
+        ]
+        widgets = {
             'permiso': forms.Select(attrs={'class': 'form-select'}),
             'numero_registro': forms.NumberInput(attrs={'class': 'form-control'}),
             'fecha_alta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'causa': forms.TextInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'fecha_apto_teorico': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'estado_apto_teorico': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'EXENTO, VIENE DE A1...'}),
+            'estado_apto_teorico': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'EXENTO'}),
         }
+
+    def __init__(self, *args, autoescuela=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.autoescuela = autoescuela
+        if not self.instance.pk and self.initial.get('permiso', 'B') == 'B' and autoescuela:
+            ultimo = RegistroAlumno.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
+                '-numero_registro'
+            ).values_list('numero_registro', flat=True).first() or 0
+            self.initial['numero_registro'] = ultimo + 1
 
     def clean(self):
         cleaned_data = super().clean()

@@ -82,7 +82,7 @@ def exportar_alumnos(autoescuela):
 
 
 def exportar_registro_b(autoescuela):
-    from facturacion.models import Alumno
+    from facturacion.models import RegistroAlumno
 
     wb = Workbook()
     ws = wb.active
@@ -154,25 +154,26 @@ def exportar_registro_b(autoescuela):
         cell.alignment = Alignment(horizontal='center', vertical='center')
         cell.border = thin_border
 
-    alumnos = Alumno.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
-        'numero_registro', 'nombre'
+    registros = RegistroAlumno.objects.filter(autoescuela=autoescuela, permiso='B').select_related('alumno').order_by(
+        'numero_registro', 'alumno__nombre'
     )
     row_number = 12
-    for alumno in alumnos:
+    for registro in registros:
+        alumno = registro.alumno
         values = [
-            alumno.numero_registro,
-            alumno.fecha_alta,
+            registro.numero_registro,
+            registro.fecha_alta,
             alumno.apellido1,
             alumno.apellido2,
             alumno.nombre_pila or alumno.nombre,
             alumno.dni,
             alumno.fecha_nacimiento,
-            alumno.permiso,
-            alumno.fecha_inicio,
-            alumno.fecha_fin,
-            alumno.causa,
-            alumno.observaciones,
-            alumno.fecha_apto_teorico or alumno.estado_apto_teorico,
+            registro.permiso,
+            registro.fecha_inicio,
+            registro.fecha_fin,
+            registro.causa,
+            registro.observaciones,
+            registro.fecha_apto_teorico or registro.estado_apto_teorico,
         ]
         for column, value in enumerate(values, 1):
             cell = ws.cell(row=row_number, column=column, value=value)
