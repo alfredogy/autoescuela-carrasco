@@ -150,10 +150,7 @@ def importar(path, nombre_autoescuela, dry_run=False, reconstruir_b=False):
                 alumnos_fusionados += fusionados
                 alumnos = [alumno_existente] if alumno_existente else []
 
-                try:
-                    numero_registro = int(value('N_REG'))
-                except (TypeError, ValueError):
-                    numero_registro = registros_b
+                numero_registro = registros_b
                 apto_teorico = value('F.APT.TEOR')
                 estado_apto = estado_apto_teorico(apto_teorico)
                 datos_alumno = {
