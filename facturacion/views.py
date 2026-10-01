@@ -15,7 +15,7 @@ from django.views.generic import (
     TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 )
 
-from .models import Factura, Alumno, RegistroAlumno, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES
+from .models import Factura, Alumno, RegistroAlumno, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES
 from .forms import FacturaForm, AlumnoForm, RegistroAlumnoForm, ConfiguracionForm, ImportarExcelForm, UsuarioForm
 from .utils.calculos import compute_components, next_invoice_number, find_missing_invoices
 from .utils.dni_validator import validar_dni
@@ -630,13 +630,29 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
     def get_queryset(self):
         qs = Alumno.objects.filter(autoescuela=self.autoescuela_activa)
         q = self.request.GET.get('q')
+        permiso = self.request.GET.get('permiso')
+        numero_registro = self.request.GET.get('numero_registro')
+        fecha_alta = self.request.GET.get('fecha_alta')
+        orden = self.request.GET.get('orden', 'nombre')
         if q:
             qs = qs.filter(Q(nombre__icontains=q) | Q(dni__icontains=q))
-        return qs
+        if permiso:
+            qs = qs.filter(registros__permiso=permiso)
+        if numero_registro:
+            qs = qs.filter(registros__numero_registro=numero_registro)
+        if fecha_alta:
+            qs = qs.filter(registros__fecha_alta=fecha_alta)
+        ordenes = {'nombre': 'nombre_pila', 'registro': 'registros__numero_registro', 'alta': '-registros__fecha_alta'}
+        return qs.distinct().order_by(ordenes.get(orden, 'nombre_pila'))
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['q'] = self.request.GET.get('q', '')
+        ctx['permiso_filtro'] = self.request.GET.get('permiso', '')
+        ctx['numero_registro_filtro'] = self.request.GET.get('numero_registro', '')
+        ctx['fecha_alta_filtro'] = self.request.GET.get('fecha_alta', '')
+        ctx['orden'] = self.request.GET.get('orden', 'nombre')
+        ctx['permisos'] = PERMISO_CHOICES
         ctx['total_alumnos'] = Alumno.objects.filter(autoescuela=self.autoescuela_activa).count()
         return ctx
 
@@ -705,6 +721,22 @@ class AlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
         ctx = super().get_context_data(**kwargs)
         ctx['titulo'] = 'Editar alumno'
         return ctx
+
+
+class AlumnoDeleteView(AutoescuelaActivaMixin, DeleteView):
+    model = Alumno
+    template_name = 'facturacion/alumno_confirm_delete.html'
+    success_url = reverse_lazy('facturacion:alumno_list')
+
+    def get_queryset(self):
+        return Alumno.objects.filter(autoescuela=self.autoescuela_activa)
+
+    def form_valid(self, form):
+        autoescuela = self.object.autoescuela
+        messages.success(self.request, f'Alumno "{self.object.nombre}" eliminado y registros B renumerados.')
+        response = super().form_valid(form)
+        RegistroAlumno.renumerar_b(autoescuela)
+        return response
 
 
 class RegistroAlumnoCreateView(AutoescuelaActivaMixin, CreateView):

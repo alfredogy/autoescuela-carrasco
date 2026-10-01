@@ -10,3 +10,19 @@
 <a href="{% url 'facturacion:alumno_detail' alumno.pk %}" class="btn btn-secondary">Cancelar</a>
 </form></div></div>
 {% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const permiso = document.getElementById('id_permiso');
+    const numero = document.getElementById('id_numero_registro');
+    const contenedor = numero.closest('.mb-3');
+    function actualizarNumero() {
+        const esB = permiso.value === 'B';
+        contenedor.classList.toggle('d-none', !esB);
+        if (!esB) numero.value = '';
+    }
+    permiso.addEventListener('change', actualizarNumero);
+    actualizarNumero();
+});
+</script>
+{% endblock %}

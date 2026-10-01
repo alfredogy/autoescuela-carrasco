@@ -65,13 +65,14 @@ class AlumnoForm(forms.ModelForm):
             'municipio': forms.TextInput(attrs={'class': 'form-control'}),
             'provincia': forms.TextInput(attrs={'class': 'form-control'}),
             'fecha_alta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_nacimiento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['nombre'].required = False
         self.fields['nombre_pila'].required = True
+        self.fields['fecha_nacimiento'].input_formats = ['%Y-%m-%d']
         if self.instance.pk and not self.instance.nombre_pila:
             self.initial['nombre_pila'] = self.instance.nombre
 
@@ -99,18 +100,20 @@ class RegistroAlumnoForm(forms.ModelForm):
         widgets = {
             'permiso': forms.Select(attrs={'class': 'form-select'}),
             'numero_registro': forms.NumberInput(attrs={'class': 'form-control'}),
-            'fecha_alta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_alta': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_inicio': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'causa': forms.TextInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'fecha_apto_teorico': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_apto_teorico': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'estado_apto_teorico': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'EXENTO'}),
         }
 
     def __init__(self, *args, autoescuela=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.autoescuela = autoescuela
+        for field_name in ('fecha_alta', 'fecha_inicio', 'fecha_fin', 'fecha_apto_teorico'):
+            self.fields[field_name].input_formats = ['%Y-%m-%d']
         if not self.instance.pk and self.initial.get('permiso', 'B') == 'B' and autoescuela:
             ultimo = RegistroAlumno.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
                 '-numero_registro'

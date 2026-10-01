@@ -124,6 +124,10 @@ class Alumno(models.Model):
         return self.registros.filter(fecha_fin__isnull=True).order_by('-fecha_alta', '-pk').first() or \
             self.registros.order_by('-fecha_alta', '-pk').first()
 
+    @property
+    def nombre_listado(self):
+        return ' '.join(parte for parte in (self.nombre_pila, self.apellido1, self.apellido2) if parte) or self.nombre
+
 
 class RegistroAlumno(models.Model):
     autoescuela = models.ForeignKey(Autoescuela, on_delete=models.CASCADE, related_name='registros_alumnos')
@@ -157,6 +161,13 @@ class RegistroAlumno(models.Model):
         elif self.permiso != 'B':
             self.numero_registro = None
         super().save(*args, **kwargs)
+
+    @classmethod
+    def renumerar_b(cls, autoescuela):
+        registros = cls.objects.filter(autoescuela=autoescuela, permiso='B').order_by('numero_registro', 'pk')
+        for numero, registro in enumerate(registros, 1):
+            if registro.numero_registro != numero:
+                cls.objects.filter(pk=registro.pk).update(numero_registro=numero)
 
 
 CURSO_CHOICES = [

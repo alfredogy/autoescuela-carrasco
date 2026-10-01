@@ -89,7 +89,7 @@ def consolidar_duplicados(alumnos, nombre_excel):
     return alumno_principal, len(alumnos) - 1
 
 
-def importar(path, nombre_autoescuela, dry_run=False):
+def importar(path, nombre_autoescuela, dry_run=False, reconstruir_b=False):
     autoescuela = Autoescuela.objects.get(nombre=nombre_autoescuela)
     workbook = load_workbook(path, read_only=True, data_only=True)
     try:
@@ -106,8 +106,10 @@ def importar(path, nombre_autoescuela, dry_run=False):
 
         creados = actualizados = omitidos = no_b = duplicados = facturas_enlazadas = alumnos_fusionados = 0
         avisos = []
-        alumnos_procesados = set()
+        registros_b = 0
         with transaction.atomic():
+            if reconstruir_b:
+                RegistroAlumno.objects.filter(autoescuela=autoescuela, permiso='B').delete()
             for numero_fila, row in enumerate(worksheet.iter_rows(min_row=12, values_only=True), start=12):
                 if not any(value not in (None, '') for value in row):
                     continue
@@ -129,11 +131,7 @@ def importar(path, nombre_autoescuela, dry_run=False):
                     continue
 
                 nacimiento = fecha_celda('F_NTO')
-                clave = clave_alumno(dni, alumno_nombre, nacimiento)
-                if clave in alumnos_procesados:
-                    duplicados += 1
-                    continue
-                alumnos_procesados.add(clave)
+                registros_b += 1
 
                 dni_normalizado = normalizar_dni(dni)
                 if dni_normalizado:
@@ -152,7 +150,10 @@ def importar(path, nombre_autoescuela, dry_run=False):
                 alumnos_fusionados += fusionados
                 alumnos = [alumno_existente] if alumno_existente else []
 
-                numero_registro = len(alumnos_procesados)
+                try:
+                    numero_registro = int(value('N_REG'))
+                except (TypeError, ValueError):
+                    numero_registro = registros_b
                 apto_teorico = value('F.APT.TEOR')
                 estado_apto = estado_apto_teorico(apto_teorico)
                 datos_alumno = {
@@ -221,10 +222,14 @@ def main():
     parser.add_argument('archivo', type=Path, help='Ruta al LIBRO REGISTRO .xlsx')
     parser.add_argument('--autoescuela', required=True, help='Nombre exacto de la sede')
     parser.add_argument('--dry-run', action='store_true', help='Valida sin guardar cambios')
+    parser.add_argument(
+        '--reconstruir-b', action='store_true',
+        help='Reemplaza los registros B actuales por el histórico completo del Excel'
+    )
     args = parser.parse_args()
 
     creados, actualizados, omitidos, no_b, duplicados, facturas_enlazadas, alumnos_fusionados, avisos = importar(
-        args.archivo, args.autoescuela, args.dry_run
+        args.archivo, args.autoescuela, args.dry_run, args.reconstruir_b
     )
     accion = 'Validación terminada' if args.dry_run else 'Importación terminada'
     print(

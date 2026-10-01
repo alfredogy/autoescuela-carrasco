@@ -11,11 +11,15 @@
     </div>
 </div>
 
-<form method="get" class="mb-3">
-    <div class="input-group" style="max-width:400px">
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4"><div class="input-group">
         <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre o DNI...">
         <button class="btn btn-outline-primary">Buscar</button>
-    </div>
+    </div></div>
+    <div class="col-md-2"><select name="permiso" class="form-select"><option value="">Todos los permisos</option>{% for codigo, etiqueta in permisos %}<option value="{{ codigo }}" {% if permiso_filtro == codigo %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><input type="number" name="numero_registro" value="{{ numero_registro_filtro }}" class="form-control" placeholder="Nº registro"></div>
+    <div class="col-md-2"><input type="date" name="fecha_alta" value="{{ fecha_alta_filtro }}" class="form-control"></div>
+    <div class="col-md-2"><select name="orden" class="form-select"><option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Ordenar por nombre</option><option value="registro" {% if orden == 'registro' %}selected{% endif %}>Nº registro</option><option value="alta" {% if orden == 'alta' %}selected{% endif %}>Fecha de alta</option></select></div>
 </form>
 
 <div class="table-responsive">
@@ -26,13 +30,13 @@
         <tbody>
         {% for a in object_list %}
         <tr>
-            <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre }}</a></td>
+            <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre_listado }}</a></td>
             <td>{{ a.dni }}</td>
             <td>{{ a.registro_principal.permiso }}</td>
             <td>{{ a.registro_principal.numero_registro|default_if_none:"" }}</td>
             <td>{{ a.municipio }}</td>
             <td>{{ a.provincia }}</td>
-            <td><a href="{% url 'facturacion:alumno_update' a.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
+            <td><a href="{% url 'facturacion:alumno_update' a.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a> <a href="{% url 'facturacion:alumno_delete' a.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a></td>
         </tr>
         {% empty %}
         <tr><td colspan="7" class="text-center text-muted">No hay alumnos</td></tr>
@@ -44,9 +48,9 @@
 {% if is_paginated %}
 <nav>
     <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}">&laquo;</a></li>{% endif %}
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page=1&q={{ q }}&permiso={{ permiso_filtro }}&numero_registro={{ numero_registro_filtro }}&fecha_alta={{ fecha_alta_filtro }}&orden={{ orden }}">Primera</a></li><li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&permiso={{ permiso_filtro }}&numero_registro={{ numero_registro_filtro }}&fecha_alta={{ fecha_alta_filtro }}&orden={{ orden }}">&laquo;</a></li>{% endif %}
         <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}">&raquo;</a></li>{% endif %}
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&permiso={{ permiso_filtro }}&numero_registro={{ numero_registro_filtro }}&fecha_alta={{ fecha_alta_filtro }}&orden={{ orden }}">&raquo;</a></li><li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ q }}&permiso={{ permiso_filtro }}&numero_registro={{ numero_registro_filtro }}&fecha_alta={{ fecha_alta_filtro }}&orden={{ orden }}">Última</a></li>{% endif %}
     </ul>
 </nav>
 {% endif %}

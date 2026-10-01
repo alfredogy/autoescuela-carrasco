@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Eliminar alumno - Autoescuela Carrasco{% endblock %}
+{% block content %}
+<div class="card border-danger"><div class="card-header bg-danger text-white"><strong>Eliminar alumno</strong></div><div class="card-body">
+<p>Vas a eliminar a <strong>{{ object.nombre }}</strong> y todos sus registros históricos.</p>
+<p>Los números de registro B posteriores se renumerarán para evitar huecos.</p>
+<form method="post">{% csrf_token %}<button class="btn btn-danger">Confirmar eliminación</button> <a href="{% url 'facturacion:alumno_detail' object.pk %}" class="btn btn-secondary">Cancelar</a></form>
+</div></div>
+{% endblock %}
