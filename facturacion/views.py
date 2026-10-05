@@ -773,6 +773,22 @@ class RegistroAlumnoCreateView(AutoescuelaActivaMixin, CreateView):
         return ctx
 
 
+class RegistroAlumnoDeleteView(AutoescuelaActivaMixin, DeleteView):
+    model = RegistroAlumno
+    template_name = 'facturacion/registro_confirm_delete.html'
+
+    def get_queryset(self):
+        return RegistroAlumno.objects.filter(autoescuela=self.autoescuela_activa)
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.alumno_id})
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Registro eliminado. El alumno, sus facturas y los demas registros se conservan.')
+        return response
+
+
 class RegistroAlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
     model = RegistroAlumno
     form_class = RegistroAlumnoForm

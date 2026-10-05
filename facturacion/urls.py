@@ -30,6 +30,7 @@ urlpatterns = [
     path('alumnos/<int:pk>/eliminar/', views.AlumnoDeleteView.as_view(), name='alumno_delete'),
     path('alumnos/<int:alumno_pk>/registros/nuevo/', views.RegistroAlumnoCreateView.as_view(), name='registro_create'),
     path('registros/<int:pk>/editar/', views.RegistroAlumnoUpdateView.as_view(), name='registro_update'),
+    path('registros/<int:pk>/eliminar/', views.RegistroAlumnoDeleteView.as_view(), name='registro_delete'),
 
     # Informes
     path('informes/trimestral/', views.InformeTrimestreView.as_view(), name='informe_trimestral'),

@@ -29,7 +29,7 @@
     </div>
     <div class="col-md-7">
         <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between"><strong>Registro principal</strong>{% if registro_principal %}<a href="{% url 'facturacion:registro_update' registro_principal.pk %}"><i class="bi bi-pencil"></i></a>{% endif %}</div>
+            <div class="card-header d-flex justify-content-between"><strong>Registro principal</strong>{% if registro_principal %}<div><a href="{% url 'facturacion:registro_update' registro_principal.pk %}" class="btn btn-sm btn-outline-primary" aria-label="Editar registro"><i class="bi bi-pencil"></i></a> <a href="{% url 'facturacion:registro_delete' registro_principal.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Eliminar registro"><i class="bi bi-trash"></i></a></div>{% endif %}</div>
             <table class="table table-sm mb-0">
                 {% if registro_principal %}
                 <tr><th>Permiso</th><td>{{ registro_principal.permiso }}</td></tr>
@@ -47,7 +47,7 @@
             <div class="card-header"><strong>Hist&oacute;rico de registros</strong></div>
             <table class="table table-sm mb-0">
                 <thead><tr><th>Permiso</th><th>N&ordm; reg.</th><th>Alta</th><th>Fin</th><th></th></tr></thead>
-                <tbody>{% for registro in registros_historicos %}<tr><td>{{ registro.permiso }}</td><td>{{ registro.numero_registro|default_if_none:"" }}</td><td>{{ registro.fecha_alta|date:"d/m/Y" }}</td><td>{{ registro.fecha_fin|date:"d/m/Y" }}</td><td><a href="{% url 'facturacion:registro_update' registro.pk %}"><i class="bi bi-pencil"></i></a></td></tr>{% empty %}<tr><td colspan="5" class="text-muted text-center">Sin registros anteriores</td></tr>{% endfor %}</tbody>
+                <tbody>{% for registro in registros_historicos %}<tr><td>{{ registro.permiso }}</td><td>{{ registro.numero_registro|default_if_none:"" }}</td><td>{{ registro.fecha_alta|date:"d/m/Y" }}</td><td>{{ registro.fecha_fin|date:"d/m/Y" }}</td><td><a href="{% url 'facturacion:registro_update' registro.pk %}" class="btn btn-sm btn-outline-primary" aria-label="Editar registro"><i class="bi bi-pencil"></i></a> <a href="{% url 'facturacion:registro_delete' registro.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Eliminar registro"><i class="bi bi-trash"></i></a></td></tr>{% empty %}<tr><td colspan="5" class="text-muted text-center">Sin registros anteriores</td></tr>{% endfor %}</tbody>
             </table>
         </div>
         <div class="card">

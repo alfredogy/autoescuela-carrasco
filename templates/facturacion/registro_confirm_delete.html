@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Eliminar registro - Autoescuela Carrasco{% endblock %}
+{% block content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white"><strong>Eliminar registro</strong></div>
+    <div class="card-body">
+        <p>Vas a eliminar un registro de <strong>{{ object.alumno.nombre }}</strong>.</p>
+        <dl>
+            <dt>Permiso</dt><dd>{{ object.permiso }}</dd>
+            <dt>N&ordm; registro</dt><dd>{{ object.numero_registro|default_if_none:"Sin numero" }}</dd>
+            <dt>Fecha de alta</dt><dd>{{ object.fecha_alta|date:"d/m/Y"|default:"Sin fecha" }}</dd>
+            <dt>Fecha de fin</dt><dd>{{ object.fecha_fin|date:"d/m/Y"|default:"Sin fecha" }}</dd>
+        </dl>
+        <p class="text-danger">Esta accion elimina definitivamente esta matricula. Para una baja, edita su fecha de fin en lugar de eliminarla.</p>
+        <p>El alumno, sus facturas y las otras matriculas se conservan. Los demas numeros de registro no cambiaran.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Confirmar eliminacion</button>
+            <a href="{% url 'facturacion:alumno_detail' object.alumno_id %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
