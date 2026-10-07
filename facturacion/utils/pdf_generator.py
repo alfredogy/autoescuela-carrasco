@@ -5,12 +5,14 @@ Migrado de generar_facturas_pdf.py.
 from io import BytesIO
 from pathlib import Path
 from decimal import Decimal
+from xml.sax.saxutils import escape
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle
+from reportlab.platypus import Paragraph, Table, TableStyle
+from reportlab.lib.styles import ParagraphStyle
 
 from django.conf import settings
 
@@ -100,7 +102,15 @@ def generate_invoice_pdf(factura, output_buffer=None):
 
     # Concepto principal (curso)
     importe_curso = float(factura.base_imponible) + float(factura.iva) if es_curso_exento else float(factura.base_imponible)
-    if importe_curso != 0:
+    if tipo_curso == 'TACOGRAFO':
+        style = ParagraphStyle('Tacografo', fontName='Helvetica', fontSize=9, leading=11)
+        conceptos = [
+            ['1', Paragraph(escape(f'TRAMITACION TARJETA TACOGRAFO {factura.nombre_factura}'), style),
+             f'{factura.base_imponible:.2f}', ''],
+            ['1', Paragraph('TASA EXPEDICION TARJETA TACOGRAFO DIGITAL (EXENTA DE IVA)', style),
+             f'{factura.tasas:.2f}', ''],
+        ]
+    elif importe_curso != 0:
         curso_texto = f"CURSO PERMISO {tipo_curso}".strip()
         if es_curso_exento:
             curso_texto += " (EXENTO DE IVA)"
@@ -108,7 +118,7 @@ def generate_invoice_pdf(factura, output_buffer=None):
         conceptos.append(['1', concepto_curso, f"{importe_curso:.2f}", ''])
 
     # Tasas desglosadas
-    if tasas_val != 0:
+    if tasas_val != 0 and tipo_curso != 'TACOGRAFO':
         TASA_BASICA = float(config.tasa_basica)
         TASA_A = float(config.tasa_a)
         TASA_TRASLADO = float(config.traslado)

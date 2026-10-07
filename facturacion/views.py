@@ -7,6 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Sum, Q, Count
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -380,7 +381,8 @@ class FacturaCreateView(AutoescuelaActivaMixin, CreateView):
         rn = form.cleaned_data.get('renovaciones', 0)
 
         base, iva, tasas, total = compute_components(
-            total_pagado, tb, ta, tr, rn, factura.curso, config=config
+            total_pagado, tb, ta, tr, rn, factura.curso, config=config,
+            tasa_tacografo=factura.tasa_tacografo,
         )
 
         factura.base_imponible = base
@@ -482,7 +484,8 @@ class FacturaUpdateView(AutoescuelaActivaMixin, UpdateView):
         rn = form.cleaned_data.get('renovaciones', 0)
 
         base, iva, tasas, total = compute_components(
-            total_pagado, tb, ta, tr, rn, factura.curso, config=config
+            total_pagado, tb, ta, tr, rn, factura.curso, config=config,
+            tasa_tacografo=factura.tasa_tacografo,
         )
 
         factura.base_imponible = base
@@ -532,15 +535,24 @@ class FacturaDeleteView(AutoescuelaActivaMixin, DeleteView):
 @con_autoescuela
 def calcular_factura_ajax(request, autoescuela):
     try:
-        total_pagado = float(request.GET.get('total_pagado', 0))
+        total_pagado = FacturaForm.base_fields['total_pagado'].clean(request.GET.get('total_pagado', '0'))
         tb = int(request.GET.get('tasa_basica', 0))
         ta = int(request.GET.get('tasa_a', 0))
         tr = int(request.GET.get('traslado', 0))
         rn = int(request.GET.get('renovaciones', 0))
-        curso = request.GET.get('curso', 'B')
+        curso = FacturaForm.base_fields['curso'].clean(request.GET.get('curso', 'B'))
+        tasa_tacografo = 0
+        if curso == 'TACOGRAFO':
+            tasa_tacografo = FacturaForm.base_fields['tasa_tacografo'].clean(request.GET.get('tasa_tacografo'))
+            if tasa_tacografo is None:
+                raise ValueError('Introduce la tasa de tacógrafo.')
+        if min(tb, ta, tr, rn) < 0:
+            raise ValueError('Las cantidades de tasas no pueden ser negativas.')
         config = Configuracion.get_instance(autoescuela)
 
-        base, iva, tasas, total = compute_components(total_pagado, tb, ta, tr, rn, curso, config=config)
+        base, iva, tasas, total = compute_components(
+            total_pagado, tb, ta, tr, rn, curso, config=config, tasa_tacografo=tasa_tacografo,
+        )
 
         return JsonResponse({
             'base': str(base),
@@ -548,7 +560,7 @@ def calcular_factura_ajax(request, autoescuela):
             'tasas': str(tasas),
             'total': str(total),
         })
-    except (ValueError, TypeError) as e:
+    except (ValueError, TypeError, ValidationError) as e:
         return JsonResponse({'error': str(e)}, status=400)
 
 

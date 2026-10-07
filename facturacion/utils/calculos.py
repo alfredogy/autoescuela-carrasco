@@ -1,7 +1,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 
 
-def compute_components(total_paid, tasa_basica_qty, tasa_a_qty, traslado_qty, renovaciones_qty, curso='B', config=None):
+def compute_components(total_paid, tasa_basica_qty, tasa_a_qty, traslado_qty, renovaciones_qty, curso='B', config=None, *, tasa_tacografo=0):
     from facturacion.models import CURSOS_EXENTOS_IVA
 
     if config is None:
@@ -14,14 +14,18 @@ def compute_components(total_paid, tasa_basica_qty, tasa_a_qty, traslado_qty, re
     rn = Decimal(str(config.renovacion))
     iva_rate = Decimal(str(config.iva_rate))
 
-    sum_tasas = (
-        Decimal(str(tasa_basica_qty)) * tb +
-        Decimal(str(tasa_a_qty)) * ta +
-        Decimal(str(traslado_qty)) * tr +
-        Decimal(str(renovaciones_qty)) * rn
-    ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
     total_paid = Decimal(str(total_paid))
+    if curso == 'TACOGRAFO':
+        sum_tasas = Decimal(str(tasa_tacografo)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if sum_tasas < 0 or sum_tasas > total_paid:
+            raise ValueError('La tasa de tacógrafo debe estar entre cero y el total pagado.')
+    else:
+        sum_tasas = (
+            Decimal(str(tasa_basica_qty)) * tb +
+            Decimal(str(tasa_a_qty)) * ta +
+            Decimal(str(traslado_qty)) * tr +
+            Decimal(str(renovaciones_qty)) * rn
+        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     importe_after = (total_paid - sum_tasas).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     if importe_after <= 0:

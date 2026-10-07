@@ -2,17 +2,25 @@
 (function() {
     'use strict';
 
-    const fields = ['id_total_pagado', 'id_tasa_basica', 'id_tasa_a', 'id_traslado', 'id_renovaciones', 'id_curso'];
+    const fields = ['id_total_pagado', 'id_tasa_basica', 'id_tasa_a', 'id_traslado', 'id_renovaciones', 'id_curso', 'id_tasa_tacografo'];
+    let previewRequest = null;
 
     function calcular() {
-        const totalPagado = parseFloat(document.getElementById('id_total_pagado')?.value) || 0;
+        const totalPagado = document.getElementById('id_total_pagado')?.value || '0';
         const tasaBasica = document.getElementById('id_tasa_basica')?.checked ? 1 : 0;
         const tasaA = document.getElementById('id_tasa_a')?.checked ? 1 : 0;
         const traslado = document.getElementById('id_traslado')?.checked ? 1 : 0;
         const renovaciones = parseInt(document.getElementById('id_renovaciones')?.value) || 0;
         const curso = document.getElementById('id_curso')?.value || 'B';
+        const esTacografo = curso === 'TACOGRAFO';
+        document.getElementById('tasas-conduccion').classList.toggle('d-none', esTacografo);
+        document.getElementById('tasa-tacografo').classList.toggle('d-none', !esTacografo);
+        const error = document.getElementById('preview-error');
+        error.hidden = true;
+        if (previewRequest) previewRequest.abort();
+        previewRequest = new AbortController();
 
-        if (totalPagado <= 0) {
+        if (Number(totalPagado) <= 0 && !esTacografo) {
             updatePreview('0.00', '0.00', '0.00', '0.00');
             return;
         }
@@ -23,16 +31,24 @@
             tasa_a: tasaA,
             traslado: traslado,
             renovaciones: renovaciones,
-            curso: curso
+            curso: curso,
+            tasa_tacografo: document.getElementById('id_tasa_tacografo')?.value || ''
         });
 
-        fetch('/api/calcular/?' + params.toString())
+        fetch('/api/calcular/?' + params.toString(), {signal: previewRequest.signal})
             .then(r => r.json())
             .then(data => {
-                if (data.error) return;
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 updatePreview(data.base, data.iva, data.tasas, data.total);
             })
-            .catch(() => {});
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                updatePreview('0.00', '0.00', '0.00', '0.00');
+                error.textContent = err.message || 'No se pudo calcular la factura.';
+                error.hidden = false;
+            });
     }
 
     function updatePreview(base, iva, tasas, total) {

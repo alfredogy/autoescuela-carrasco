@@ -1,9 +1,16 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib.auth.models import User
 from .models import Factura, Alumno, RegistroAlumno, Configuracion, Autoescuela, CURSO_CHOICES
 
 
 class FacturaForm(forms.ModelForm):
+    tasa_tacografo = forms.DecimalField(
+        label='Tasa expedición tarjeta tacógrafo digital',
+        max_digits=10, decimal_places=2, min_value=0, required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'})
+    )
     total_pagado = forms.DecimalField(
         label='Total pagado',
         max_digits=10, decimal_places=2,
@@ -34,7 +41,7 @@ class FacturaForm(forms.ModelForm):
     class Meta:
         model = Factura
         fields = ['curso', 'fecha', 'nombre_factura', 'dni_factura',
-                  'direccion_factura', 'cp_factura', 'municipio_factura', 'provincia_factura']
+                  'direccion_factura', 'cp_factura', 'municipio_factura', 'provincia_factura', 'tasa_tacografo']
         widgets = {
             'curso': forms.Select(attrs={'class': 'form-select', 'id': 'id_curso'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -45,6 +52,26 @@ class FacturaForm(forms.ModelForm):
             'municipio_factura': forms.TextInput(attrs={'class': 'form-control'}),
             'provincia_factura': forms.TextInput(attrs={'class': 'form-control', 'value': 'VALENCIA'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.initial.setdefault('tasa_tacografo', Decimal('32.47'))
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('curso') == 'TACOGRAFO':
+            tasa = cleaned.get('tasa_tacografo')
+            total = cleaned.get('total_pagado')
+            if tasa is None and 'tasa_tacografo' not in self.errors:
+                self.add_error('tasa_tacografo', 'Introduce la tasa de tacógrafo.')
+            elif tasa is not None and total is not None and tasa > total:
+                self.add_error('tasa_tacografo', 'La tasa no puede superar el total pagado.')
+            for field in ('tasa_basica', 'tasa_a', 'traslado', 'renovaciones'):
+                cleaned[field] = 0
+        else:
+            cleaned['tasa_tacografo'] = Decimal('0')
+        return cleaned
 
 
 class AlumnoForm(forms.ModelForm):

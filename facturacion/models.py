@@ -182,6 +182,7 @@ CURSO_CHOICES = [
     ('C1', 'C1'),
     ('C+E', 'C+E'),
     ('D1', 'D1'),
+    ('TACOGRAFO', 'TACÓGRAFO'),
 ]
 
 CURSOS_EXENTOS_IVA = ('C', 'C1', 'C+E', 'D1')
@@ -199,7 +200,7 @@ class Factura(models.Model):
         Autoescuela, on_delete=models.CASCADE,
         related_name='facturas', null=True, blank=True
     )
-    curso = models.CharField('Curso', max_length=5, choices=CURSO_CHOICES, default='B')
+    curso = models.CharField('Curso', max_length=10, choices=CURSO_CHOICES, default='B')
     numero_factura = models.CharField('Nº Factura', max_length=20)
     fecha = models.DateField('Fecha')
 
@@ -224,6 +225,7 @@ class Factura(models.Model):
     tasa_a_qty = models.PositiveIntegerField('Tasa A (cant)', default=0)
     traslado_qty = models.PositiveIntegerField('Traslado (cant)', default=0)
     renovaciones_qty = models.PositiveIntegerField('Renovaciones (cant)', default=0)
+    tasa_tacografo = models.DecimalField('Tasa tacógrafo', max_digits=10, decimal_places=2, default=Decimal('0'))
 
     trimestre = models.PositiveIntegerField('Trimestre', choices=TRIMESTRE_CHOICES)
     anio = models.PositiveIntegerField('Año')
