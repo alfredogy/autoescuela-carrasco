@@ -8,7 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q, Count, Subquery, OuterRef, Exists, Case, When, Value, IntegerField, Prefetch
+from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -16,8 +17,8 @@ from django.views.generic import (
     TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 )
 
-from .models import Factura, Alumno, RegistroAlumno, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES
-from .forms import FacturaForm, AlumnoForm, RegistroAlumnoForm, ConfiguracionForm, ImportarExcelForm, UsuarioForm
+from .models import Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES
+from .forms import FacturaForm, AlumnoForm, RegistroAlumnoForm, EventoExamenForm, ConfiguracionForm, ImportarExcelForm, UsuarioForm
 from .utils.calculos import compute_components, next_invoice_number, find_missing_invoices
 from .utils.dni_validator import validar_dni
 from .utils.iva_comparator import comparar_iva_anual
@@ -363,10 +364,26 @@ class FacturaCreateView(AutoescuelaActivaMixin, CreateView):
     form_class = FacturaForm
     template_name = 'facturacion/factura_form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['autoescuela'] = self.autoescuela_activa
+        return kwargs
+
     def get_initial(self):
         initial = super().get_initial()
         initial['provincia_factura'] = 'VALENCIA'
         initial['renovaciones'] = 0
+        if self.request.GET.get('alumno'):
+            from django.http import Http404
+            try:
+                alumno_id = int(self.request.GET['alumno'])
+            except (ValueError, TypeError):
+                raise Http404('Alumno no valido')
+            alumno = get_object_or_404(Alumno, pk=alumno_id, autoescuela=self.autoescuela_activa)
+            initial.update(alumno_id=alumno.pk, nombre_factura=alumno.nombre_listado,
+                           dni_factura=alumno.dni, direccion_factura=alumno.direccion,
+                           cp_factura=alumno.codigo_postal, municipio_factura=alumno.municipio,
+                           provincia_factura=alumno.provincia)
         return initial
 
     def form_valid(self, form):
@@ -412,26 +429,7 @@ class FacturaCreateView(AutoescuelaActivaMixin, CreateView):
             form.add_error('numero_factura_manual', f'La factura {factura.numero_factura} ya existe.')
             return self.form_invalid(form)
 
-        dni = factura.dni_factura.strip()
-        if dni:
-            alumno, created = Alumno.objects.get_or_create(
-                dni=dni,
-                autoescuela=self.autoescuela_activa,
-                defaults={
-                    'nombre': factura.nombre_factura,
-                    'direccion': factura.direccion_factura,
-                    'codigo_postal': factura.cp_factura,
-                    'municipio': factura.municipio_factura,
-                    'provincia': factura.provincia_factura,
-                }
-            )
-            if not created and factura.direccion_factura:
-                alumno.direccion = factura.direccion_factura
-                alumno.codigo_postal = factura.cp_factura
-                alumno.municipio = factura.municipio_factura
-                alumno.provincia = factura.provincia_factura
-                alumno.save()
-            factura.alumno = alumno
+        form.vincular_alumno(factura)
 
         factura.save()
         messages.success(self.request, f'Factura {factura.numero_factura} creada correctamente.')
@@ -458,6 +456,11 @@ class FacturaUpdateView(AutoescuelaActivaMixin, UpdateView):
     model = Factura
     form_class = FacturaForm
     template_name = 'facturacion/factura_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['autoescuela'] = self.autoescuela_activa
+        return kwargs
 
     def get_queryset(self):
         return Factura.objects.filter(autoescuela=self.autoescuela_activa)
@@ -504,6 +507,7 @@ class FacturaUpdateView(AutoescuelaActivaMixin, UpdateView):
             elif num_manual.isdigit():
                 factura.numero_factura = f"{config.anio_activo}/{int(num_manual):04d}"
 
+        form.vincular_alumno(factura)
         factura.save()
         messages.success(self.request, f'Factura {factura.numero_factura} actualizada.')
         return redirect('facturacion:factura_detail', pk=factura.pk)
@@ -566,29 +570,17 @@ def calcular_factura_ajax(request, autoescuela):
 
 @con_autoescuela
 def buscar_alumno_ajax(request, autoescuela):
-    dni = request.GET.get('dni', '').strip()
-    if len(dni) < 3:
-        return JsonResponse({'found': False})
-
-    try:
-        alumno = Alumno.objects.filter(
-            autoescuela=autoescuela
-        ).filter(
-            Q(dni__icontains=dni) | Q(nombre__icontains=dni)
-        ).first()
-        if alumno:
-            return JsonResponse({
-                'found': True,
-                'nombre': alumno.nombre,
-                'dni': alumno.dni,
-                'direccion': alumno.direccion,
-                'cp': alumno.codigo_postal,
-                'municipio': alumno.municipio,
-                'provincia': alumno.provincia,
-            })
-    except Exception:
-        pass
-    return JsonResponse({'found': False})
+    termino = request.GET.get('q', request.GET.get('dni', '')).strip()[:200]
+    qs = Alumno.objects.filter(autoescuela=autoescuela)
+    if not termino:
+        return JsonResponse({'found': False, 'results': []})
+    for token in termino.split():
+        qs = qs.filter(Q(nombre_pila__icontains=token) | Q(apellido1__icontains=token) |
+                       Q(apellido2__icontains=token) | Q(nombre__icontains=token) | Q(dni__icontains=token))
+    results = [{'id': a.pk, 'nombre': a.nombre_listado, 'dni': a.dni, 'direccion': a.direccion,
+                'cp': a.codigo_postal, 'municipio': a.municipio, 'provincia': a.provincia}
+               for a in qs.order_by('nombre_pila', 'apellido1', 'pk')[:20]]
+    return JsonResponse({'found': bool(results), 'results': results})
 
 
 # ============================================================
@@ -640,7 +632,14 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Alumno.objects.filter(autoescuela=self.autoescuela_activa)
+        principal = RegistroAlumno.objects.filter(alumno_id=OuterRef('pk'), autoescuela=self.autoescuela_activa).annotate(
+            cerrado=Case(When(fecha_fin__isnull=True, then=Value(0)), default=Value(1), output_field=IntegerField())
+        ).order_by('cerrado', '-fecha_alta', '-pk')
+        qs = Alumno.objects.filter(autoescuela=self.autoescuela_activa).annotate(
+            principal_id=Subquery(principal.values('pk')[:1]),
+            principal_numero=Subquery(principal.values('numero_registro')[:1]),
+            principal_fecha=Subquery(principal.values('fecha_alta')[:1]),
+        ).prefetch_related(Prefetch('registros', queryset=RegistroAlumno.objects.filter(autoescuela=self.autoescuela_activa)))
         q = self.request.GET.get('q')
         permiso = self.request.GET.get('permiso')
         numero_registro = self.request.GET.get('numero_registro')
@@ -648,14 +647,27 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
         orden = self.request.GET.get('orden', 'nombre')
         if q:
             qs = qs.filter(Q(nombre__icontains=q) | Q(dni__icontains=q))
+        matching = RegistroAlumno.objects.filter(alumno_id=OuterRef('pk'), autoescuela=self.autoescuela_activa)
         if permiso:
-            qs = qs.filter(registros__permiso=permiso)
+            matching = matching.filter(permiso=permiso)
         if numero_registro:
-            qs = qs.filter(registros__numero_registro=numero_registro)
+            if not numero_registro.isdigit():
+                return qs.none()
+            matching = matching.filter(numero_registro=numero_registro)
         if fecha_alta:
-            qs = qs.filter(registros__fecha_alta=fecha_alta)
-        ordenes = {'nombre': 'nombre_pila', 'registro': 'registros__numero_registro', 'alta': '-registros__fecha_alta'}
-        return qs.distinct().order_by(ordenes.get(orden, 'nombre_pila'))
+            from django.utils.dateparse import parse_date
+            try:
+                fecha = parse_date(fecha_alta)
+            except ValueError:
+                fecha = None
+            if fecha is None:
+                return qs.none()
+            matching = matching.filter(fecha_alta=fecha)
+        if permiso or numero_registro or fecha_alta:
+            qs = qs.filter(Exists(matching))
+        ordenes = {'nombre': ('nombre_pila', 'apellido1', 'apellido2', 'pk'),
+                   'registro': ('principal_numero', 'pk'), 'alta': ('-principal_fecha', 'pk')}
+        return qs.order_by(*ordenes.get(orden, ordenes['nombre']))
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -666,6 +678,10 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
         ctx['orden'] = self.request.GET.get('orden', 'nombre')
         ctx['permisos'] = PERMISO_CHOICES
         ctx['total_alumnos'] = Alumno.objects.filter(autoescuela=self.autoescuela_activa).count()
+        query = self.request.GET.copy()
+        query.pop('page', None)
+        ctx['pagination_query'] = query.urlencode()
+        ctx['pagination_fields'] = list(query.items())
         return ctx
 
 
@@ -678,11 +694,12 @@ class AlumnoDetailView(AutoescuelaActivaMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['facturas'] = self.object.facturas.all().order_by('-fecha')
+        ctx['facturas'] = self.object.facturas.filter(autoescuela=self.autoescuela_activa).order_by('-fecha')
         ctx['registro_principal'] = self.object.registro_principal
         ctx['registros_historicos'] = self.object.registros.exclude(
             pk=ctx['registro_principal'].pk if ctx['registro_principal'] else None
         )
+        ctx['registros_eventos'] = self.object.registros.filter(autoescuela=self.autoescuela_activa).prefetch_related('eventos')
         return ctx
 
 
@@ -821,6 +838,67 @@ class RegistroAlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
         ctx = super().get_context_data(**kwargs)
         ctx['titulo'] = 'Editar registro'
         ctx['alumno'] = self.object.alumno
+        return ctx
+
+
+class EventoExamenCreateView(AutoescuelaActivaMixin, CreateView):
+    model = EventoExamen
+    form_class = EventoExamenForm
+    template_name = 'facturacion/evento_form.html'
+
+    def get_registro(self):
+        return get_object_or_404(RegistroAlumno, pk=self.kwargs['registro_pk'],
+                                autoescuela=self.autoescuela_activa, alumno__autoescuela=self.autoescuela_activa)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = EventoExamen(registro=self.get_registro())
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['tipo'] = 'RENOVACION' if self.request.GET.get('tipo') == 'RENOVACION' else 'TEORICO'
+        initial['resultado'] = '' if initial['tipo'] == 'RENOVACION' else 'PENDIENTE'
+        initial['fecha'] = timezone.localdate()
+        return initial
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.registro.alumno_id})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['registro'] = self.get_registro()
+        return ctx
+
+
+class EventoExamenUpdateView(AutoescuelaActivaMixin, UpdateView):
+    model = EventoExamen
+    form_class = EventoExamenForm
+    template_name = 'facturacion/evento_form.html'
+
+    def get_queryset(self):
+        return EventoExamen.objects.filter(registro__autoescuela=self.autoescuela_activa,
+                                          registro__alumno__autoescuela=self.autoescuela_activa).select_related('registro__alumno')
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.registro.alumno_id})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['registro'] = self.object.registro
+        return ctx
+
+
+class AlertasView(AutoescuelaActivaMixin, TemplateView):
+    template_name = 'facturacion/alertas.html'
+    ranking = False
+
+    def get_context_data(self, **kwargs):
+        from .utils.alertas import calcular_alertas
+        ctx = super().get_context_data(**kwargs)
+        hoy = timezone.localdate()
+        alertas, periodos = calcular_alertas(self.autoescuela_activa, hoy)
+        ctx.update(hoy=hoy, filas=periodos if self.ranking else alertas, ranking=self.ranking)
         return ctx
 
 

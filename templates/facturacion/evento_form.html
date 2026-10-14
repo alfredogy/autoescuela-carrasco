@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Examen / renovaci&oacute;n acad&eacute;mica</h2>
+<p>{{ registro.alumno.nombre_listado }}: {{ registro.permiso }} #{{ registro.numero_registro|default_if_none:"" }}</p>
+<p class="text-muted">La renovaci&oacute;n reinicia los suspensos, no los plazos del contrato ni del te&oacute;rico. Para renovar, deja el resultado vac&iacute;o.</p>
+<form method="post" class="col-md-6">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}<div class="mb-3"><label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+    <button class="btn btn-primary">Guardar</button>
+    <a class="btn btn-outline-secondary" href="{% url 'facturacion:alumno_detail' registro.alumno_id %}">Cancelar</a>
+</form>
+{% endblock %}

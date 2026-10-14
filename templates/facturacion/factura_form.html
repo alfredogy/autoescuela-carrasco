@@ -7,6 +7,7 @@
 
 <form method="post" id="factura-form">
     {% csrf_token %}
+    {{ form.alumno_id }}
 
     {% if form.errors %}
     <div class="alert alert-danger">
@@ -78,6 +79,12 @@
             <div class="card mb-3">
                 <div class="card-header"><strong>Datos del cliente</strong></div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <label for="alumno-search" class="form-label">Buscar alumno por nombre, apellidos o DNI</label>
+                        <input id="alumno-search" class="form-control" type="search" autocomplete="off" data-url="{% url 'facturacion:buscar_alumno' %}">
+                        <div id="alumno-results" class="list-group mt-2" aria-live="polite"></div>
+                        <small class="text-muted">Selecciona un resultado para vincular y rellenar los datos del cliente.</small>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-md-4">
                             <label class="form-label">DNI</label>
@@ -152,5 +159,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/factura_form.js' %}"></script>
+<script src="{% static 'js/factura_form.js' %}?v=20261014-alumnos-2"></script>
 {% endblock %}

@@ -5,6 +5,7 @@
 <div class="row mb-3">
     <div class="col"><h2>{{ object.nombre }}</h2></div>
     <div class="col-auto">
+        <a href="{% url 'facturacion:factura_create' %}?alumno={{ object.pk }}" class="btn btn-outline-primary">Nueva factura</a>
         <a href="{% url 'facturacion:registro_create' object.pk %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nueva matr&iacute;cula</a>
         <a href="{% url 'facturacion:alumno_update' object.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> Editar</a>
     </div>
@@ -19,6 +20,7 @@
                 <tr><th>Primer apellido</th><td>{{ object.apellido1 }}</td></tr>
                 <tr><th>Segundo apellido</th><td>{{ object.apellido2 }}</td></tr>
                 <tr><th>DNI</th><td>{{ object.dni }}</td></tr>
+                <tr><th>Caducidad DNI/NIE</th><td>{{ object.fecha_caducidad_dni|date:"d/m/Y" }}</td></tr>
                 <tr><th>Direcci&oacute;n</th><td>{{ object.direccion }}</td></tr>
                 <tr><th>C.P.</th><td>{{ object.codigo_postal }}</td></tr>
                 <tr><th>Municipio</th><td>{{ object.municipio }}</td></tr>
@@ -49,6 +51,17 @@
                 <thead><tr><th>Permiso</th><th>N&ordm; reg.</th><th>Alta</th><th>Fin</th><th></th></tr></thead>
                 <tbody>{% for registro in registros_historicos %}<tr><td>{{ registro.permiso }}</td><td>{{ registro.numero_registro|default_if_none:"" }}</td><td>{{ registro.fecha_alta|date:"d/m/Y" }}</td><td>{{ registro.fecha_fin|date:"d/m/Y" }}</td><td><a href="{% url 'facturacion:registro_update' registro.pk %}" class="btn btn-sm btn-outline-primary" aria-label="Editar registro"><i class="bi bi-pencil"></i></a> <a href="{% url 'facturacion:registro_delete' registro.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Eliminar registro"><i class="bi bi-trash"></i></a></td></tr>{% empty %}<tr><td colspan="5" class="text-muted text-center">Sin registros anteriores</td></tr>{% endfor %}</tbody>
             </table>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header"><strong>Historial de ex&aacute;menes y renovaciones por matr&iacute;cula</strong></div>
+            <div class="card-body">
+            {% for registro in registros_eventos %}
+                <h3 class="h6">{{ registro.permiso }} #{{ registro.numero_registro|default_if_none:"" }} (Alta {{ registro.fecha_alta|date:"d/m/Y" }}){% if registro.fecha_fin %}: cerrada{% endif %}</h3>
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'facturacion:evento_create' registro.pk %}">Registrar examen</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'facturacion:evento_create' registro.pk %}?tipo=RENOVACION">Registrar renovaci&oacute;n acad&eacute;mica</a>
+                <ul class="mt-2">{% for evento in registro.eventos.all %}<li>{{ evento.fecha|date:"d/m/Y" }}: {{ evento.get_tipo_display }}{% if evento.resultado %} / {{ evento.get_resultado_display }}{% endif %} <a href="{% url 'facturacion:evento_update' evento.pk %}">Editar</a></li>{% empty %}<li class="text-muted">Sin eventos</li>{% endfor %}</ul>
+            {% endfor %}
+            </div>
         </div>
         <div class="card">
             <div class="card-header"><strong>Facturas ({{ facturas.count }})</strong></div>

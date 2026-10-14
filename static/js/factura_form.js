@@ -58,33 +58,49 @@
         document.getElementById('preview-total').textContent = parseFloat(total).toFixed(2) + ' \u20ac';
     }
 
-    // Búsqueda de alumno por DNI
+    // Only explicit selection changes billing snapshots.
     let searchTimeout = null;
-    function buscarAlumno() {
-        const dni = document.getElementById('id_dni_factura')?.value || '';
-        if (dni.length < 3) return;
-
+    let searchRequest = null;
+    let searchGeneration = 0;
+    function buscarAlumno(event) {
+        document.getElementById('id_alumno_id').value = '';
+        const results = document.getElementById('alumno-results');
+        results.replaceChildren();
         clearTimeout(searchTimeout);
+        if (searchRequest) searchRequest.abort();
+        const generation = ++searchGeneration;
+        const term = event.target.value.trim();
+        if (!term) return;
         searchTimeout = setTimeout(() => {
-            fetch('/api/buscar-alumno/?dni=' + encodeURIComponent(dni))
+            searchRequest = new AbortController();
+            const search = document.getElementById('alumno-search');
+            fetch(search.dataset.url + '?q=' + encodeURIComponent(term), {signal: searchRequest.signal})
                 .then(r => r.json())
                 .then(data => {
-                    if (data.found) {
-                        const nombreField = document.getElementById('id_nombre_factura');
-                        const dirField = document.getElementById('id_direccion_factura');
-                        const cpField = document.getElementById('id_cp_factura');
-                        const munField = document.getElementById('id_municipio_factura');
-                        const provField = document.getElementById('id_provincia_factura');
-
-                        if (nombreField && !nombreField.value) nombreField.value = data.nombre;
-                        if (dirField && !dirField.value) dirField.value = data.direccion;
-                        if (cpField && !cpField.value) cpField.value = data.cp;
-                        if (munField && !munField.value) munField.value = data.municipio;
-                        if (provField && !provField.value) provField.value = data.provincia;
-                    }
+                    if (generation !== searchGeneration) return;
+                    results.replaceChildren();
+                    (data.results || []).forEach(alumno => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'list-group-item list-group-item-action';
+                        button.textContent = alumno.nombre + ' (' + (alumno.dni || 'Sin DNI') + ') #' + alumno.id;
+                        button.addEventListener('click', () => {
+                            ++searchGeneration;
+                            document.getElementById('id_alumno_id').value = alumno.id;
+                            const mapping = {nombre_factura: 'nombre', dni_factura: 'dni', direccion_factura: 'direccion',
+                                cp_factura: 'cp', municipio_factura: 'municipio', provincia_factura: 'provincia'};
+                            Object.entries(mapping).forEach(([field, key]) => {
+                                document.getElementById('id_' + field).value = alumno[key] || '';
+                            });
+                            search.value = alumno.nombre;
+                            results.replaceChildren();
+                        });
+                        results.appendChild(button);
+                    });
+                    if (!data.results?.length) results.textContent = 'No hay alumnos coincidentes.';
                 })
                 .catch(() => {});
-        }, 500);
+        }, 300);
     }
 
     // Event listeners
@@ -97,10 +113,9 @@
             }
         });
 
-        const dniField = document.getElementById('id_dni_factura');
-        if (dniField) {
-            dniField.addEventListener('input', buscarAlumno);
-        }
+        ['alumno-search', 'id_dni_factura', 'id_nombre_factura'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', buscarAlumno);
+        });
 
         // Calcular al cargar (para edición)
         calcular();

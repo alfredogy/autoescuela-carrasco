@@ -2,10 +2,11 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.models import User
-from .models import Factura, Alumno, RegistroAlumno, Configuracion, Autoescuela, CURSO_CHOICES
+from .models import Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, Autoescuela, CURSO_CHOICES
 
 
 class FacturaForm(forms.ModelForm):
+    alumno_id = forms.ModelChoiceField(queryset=Alumno.objects.none(), required=False, widget=forms.HiddenInput())
     tasa_tacografo = forms.DecimalField(
         label='Tasa expedición tarjeta tacógrafo digital',
         max_digits=10, decimal_places=2, min_value=0, required=False,
@@ -44,7 +45,7 @@ class FacturaForm(forms.ModelForm):
                   'direccion_factura', 'cp_factura', 'municipio_factura', 'provincia_factura', 'tasa_tacografo']
         widgets = {
             'curso': forms.Select(attrs={'class': 'form-select', 'id': 'id_curso'}),
-            'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'nombre_factura': forms.TextInput(attrs={'class': 'form-control'}),
             'dni_factura': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_dni_factura', 'placeholder': 'Escribe DNI para buscar alumno'}),
             'direccion_factura': forms.TextInput(attrs={'class': 'form-control'}),
@@ -53,8 +54,13 @@ class FacturaForm(forms.ModelForm):
             'provincia_factura': forms.TextInput(attrs={'class': 'form-control', 'value': 'VALENCIA'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, autoescuela=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.autoescuela = autoescuela
+        self.fields['fecha'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+        self.fields['alumno_id'].queryset = Alumno.objects.filter(autoescuela=autoescuela) if autoescuela else Alumno.objects.none()
+        if self.instance.pk:
+            self.initial.setdefault('alumno_id', self.instance.alumno_id)
         if not self.instance.pk:
             self.initial.setdefault('tasa_tacografo', Decimal('32.47'))
 
@@ -71,7 +77,30 @@ class FacturaForm(forms.ModelForm):
                 cleaned[field] = 0
         else:
             cleaned['tasa_tacografo'] = Decimal('0')
+        self.alumno_seleccionado = cleaned.get('alumno_id')
+        dni = (cleaned.get('dni_factura') or '').upper().replace(' ', '').replace('-', '').strip()
+        if not self.alumno_seleccionado and 'alumno_id' not in self.errors and dni and self.autoescuela:
+            from django.db.models import Value
+            from django.db.models.functions import Replace, Upper, Trim
+            matches = list(Alumno.objects.filter(autoescuela=self.autoescuela).annotate(
+                dni_norm=Replace(Replace(Upper(Trim('dni')), Value(' '), Value('')), Value('-'), Value(''))
+            ).filter(dni_norm=dni)[:2])
+            if len(matches) > 1:
+                self.add_error('dni_factura', 'DNI ambiguo: selecciona el alumno de la lista.')
+            elif matches:
+                self.alumno_seleccionado = matches[0]
         return cleaned
+
+    def vincular_alumno(self, factura):
+        alumno = self.alumno_seleccionado
+        if alumno is None and factura.dni_factura.strip():
+            alumno = Alumno.objects.create(
+                autoescuela=self.autoescuela, dni=factura.dni_factura.strip(),
+                nombre=factura.nombre_factura, direccion=factura.direccion_factura,
+                codigo_postal=factura.cp_factura, municipio=factura.municipio_factura,
+                provincia=factura.provincia_factura,
+            )
+        factura.alumno = alumno
 
 
 class AlumnoForm(forms.ModelForm):
@@ -79,7 +108,7 @@ class AlumnoForm(forms.ModelForm):
         model = Alumno
         fields = [
             'nombre', 'nombre_pila', 'apellido1', 'apellido2', 'dni', 'direccion', 'codigo_postal', 'municipio', 'provincia',
-            'fecha_nacimiento',
+            'fecha_nacimiento', 'fecha_caducidad_dni',
         ]
         widgets = {
             'nombre': forms.HiddenInput(),
@@ -93,6 +122,7 @@ class AlumnoForm(forms.ModelForm):
             'provincia': forms.TextInput(attrs={'class': 'form-control'}),
             'fecha_alta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_nacimiento': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_caducidad_dni': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -100,6 +130,7 @@ class AlumnoForm(forms.ModelForm):
         self.fields['nombre'].required = False
         self.fields['nombre_pila'].required = True
         self.fields['fecha_nacimiento'].input_formats = ['%Y-%m-%d']
+        self.fields['fecha_caducidad_dni'].input_formats = ['%Y-%m-%d']
         if self.instance.pk and not self.instance.nombre_pila:
             self.initial['nombre_pila'] = self.instance.nombre
 
@@ -152,6 +183,23 @@ class RegistroAlumnoForm(forms.ModelForm):
         if cleaned_data.get('permiso') != 'B':
             cleaned_data['numero_registro'] = None
         return cleaned_data
+
+
+class EventoExamenForm(forms.ModelForm):
+    class Meta:
+        model = EventoExamen
+        fields = ['tipo', 'fecha', 'resultado']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'resultado': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['fecha'].input_formats = ['%Y-%m-%d']
+        if not self.instance.pk:
+            self.initial.setdefault('resultado', 'PENDIENTE')
 
 
 class ConfiguracionForm(forms.ModelForm):

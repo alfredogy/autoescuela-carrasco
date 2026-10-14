@@ -31,6 +31,10 @@ urlpatterns = [
     path('alumnos/<int:alumno_pk>/registros/nuevo/', views.RegistroAlumnoCreateView.as_view(), name='registro_create'),
     path('registros/<int:pk>/editar/', views.RegistroAlumnoUpdateView.as_view(), name='registro_update'),
     path('registros/<int:pk>/eliminar/', views.RegistroAlumnoDeleteView.as_view(), name='registro_delete'),
+    path('registros/<int:registro_pk>/eventos/nuevo/', views.EventoExamenCreateView.as_view(), name='evento_create'),
+    path('eventos/<int:pk>/editar/', views.EventoExamenUpdateView.as_view(), name='evento_update'),
+    path('alertas/', views.AlertasView.as_view(), name='alertas'),
+    path('caducidad-teorico/', views.AlertasView.as_view(ranking=True), name='caducidad_teorico'),
 
     # Informes
     path('informes/trimestral/', views.InformeTrimestreView.as_view(), name='informe_trimestral'),

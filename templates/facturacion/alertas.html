@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block extra_css %}
+<style>
+.aviso-yellow { background-color: #fff3cd; color: #664d03; }
+.aviso-red { background-color: #f8d7da; color: #842029; }
+.aviso-purple { background-color: #e2d4f0; color: #48206a; }
+.aviso-orange { background-color: #ffe0b2; color: #723600; }
+.aviso-pink { background-color: #f9d4e7; color: #76204a; }
+</style>
+{% endblock %}
+{% block content %}
+<h2>{% if ranking %}Caducidad te&oacute;rico{% else %}Alertas{% endif %}</h2>
+<p>Fecha de referencia: {{ hoy|date:"d/m/Y" }}. {% if ranking %}Orden por vencimiento: primero los plazos m&aacute;s antiguos, incluidos los vencidos.{% else %}Los avisos de matr&iacute;cula excluyen registros cerrados y pr&aacute;cticos aprobados. El DNI incluye todos los alumnos.{% endif %}</p>
+<div class="table-responsive"><table class="table table-striped align-middle">
+<thead><tr><th>Alumno</th><th>Matr&iacute;cula</th><th>Etapa / aviso</th><th>Alta original</th><th>Inicio del plazo</th><th>Inicio aviso</th><th>Vencimiento</th><th>D&iacute;as restantes</th><th>Estado</th></tr></thead>
+<tbody>{% for f in filas %}<tr>
+<td><a href="{% url 'facturacion:alumno_detail' f.alumno.pk %}">{{ f.alumno.nombre_listado }}</a></td>
+<td>{% if f.registro %}<a href="{% url 'facturacion:registro_update' f.registro.pk %}">{{ f.registro.permiso }} #{{ f.registro.numero_registro|default_if_none:"" }}</a>{% else %}Alumno{% endif %}</td>
+<td><span class="badge aviso-{{ f.color }} text-wrap">{{ f.etiqueta }}</span>{% if f.suspensos %} ({{ f.suspensos }} suspensos) <a href="{% url 'facturacion:evento_create' f.registro.pk %}?tipo=RENOVACION">Registrar renovaci&oacute;n</a>{% endif %}</td>
+<td>{{ f.registro.fecha_alta|date:"d/m/Y" }}</td><td>{{ f.inicio|date:"d/m/Y" }}</td><td>{{ f.aviso|date:"d/m/Y" }}</td><td>{{ f.limite|date:"d/m/Y" }}</td>
+<td>{% if f.tipo != 'renovacion' %}{{ f.dias }}{% endif %}</td><td>{% if f.tipo == 'renovacion' %}Renovaci&oacute;n necesaria{% elif f.vencido %}Vencido{% else %}En plazo{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="9">No hay {% if ranking %}plazos de te&oacute;rico{% else %}alertas{% endif %}.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

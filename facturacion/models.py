@@ -96,6 +96,7 @@ class Alumno(models.Model):
     numero_registro = models.PositiveIntegerField('Nº registro', null=True, blank=True)
     fecha_alta = models.DateField('Fecha de alta', null=True, blank=True)
     fecha_nacimiento = models.DateField('Fecha de nacimiento', null=True, blank=True)
+    fecha_caducidad_dni = models.DateField('Caducidad DNI/NIE', null=True, blank=True)
     fecha_inicio = models.DateField('Fecha de inicio', null=True, blank=True)
     fecha_fin = models.DateField('Fecha de fin', null=True, blank=True)
     causa = models.CharField('Causa', max_length=200, blank=True, default='')
@@ -121,6 +122,8 @@ class Alumno(models.Model):
 
     @property
     def registro_principal(self):
+        if hasattr(self, 'principal_id'):
+            return next((r for r in self.registros.all() if r.pk == self.principal_id), None)
         return self.registros.filter(fecha_fin__isnull=True).order_by('-fecha_alta', '-pk').first() or \
             self.registros.order_by('-fecha_alta', '-pk').first()
 
@@ -168,6 +171,33 @@ class RegistroAlumno(models.Model):
         for numero, registro in enumerate(registros, 1):
             if registro.numero_registro != numero:
                 cls.objects.filter(pk=registro.pk).update(numero_registro=numero)
+
+
+class EventoExamen(models.Model):
+    TIPOS = [('TEORICO', 'Teorico'), ('PRACTICO', 'Practico'), ('RENOVACION', 'Renovacion academica')]
+    RESULTADOS = [('PENDIENTE', 'Pendiente'), ('APROBADO', 'Aprobado'), ('SUSPENDIDO', 'Suspendido')]
+    registro = models.ForeignKey(RegistroAlumno, on_delete=models.CASCADE, related_name='eventos')
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    fecha = models.DateField()
+    resultado = models.CharField(max_length=10, choices=RESULTADOS, blank=True, default='')
+
+    class Meta:
+        ordering = ['fecha', 'pk']
+        constraints = [models.CheckConstraint(
+            check=(models.Q(tipo='RENOVACION', resultado='') | models.Q(
+                tipo__in=['TEORICO', 'PRACTICO'], resultado__in=['PENDIENTE', 'APROBADO', 'SUSPENDIDO'])),
+            name='evento_tipo_resultado_valido',
+        )]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.tipo == 'RENOVACION':
+            if self.resultado:
+                raise ValidationError({'resultado': 'La renovacion no tiene resultado.'})
+        elif self.tipo in ('TEORICO', 'PRACTICO') and not self.resultado:
+            raise ValidationError({'resultado': 'Selecciona el resultado del examen.'})
+        if self.registro_id and self.registro.autoescuela_id != self.registro.alumno.autoescuela_id:
+            raise ValidationError('La matricula y el alumno deben pertenecer a la misma sede.')
 
 
 CURSO_CHOICES = [
