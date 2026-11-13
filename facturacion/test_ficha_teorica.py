@@ -14,7 +14,7 @@ from .utils.pdf_ficha_teorica import generate_theoretical_sheet_pdf
 class FichaTeoricaTests(TestCase):
     def setUp(self):
         self.sede = Autoescuela.objects.get(nombre='Alfafar')
-        self.ajena = Autoescuela.objects.create(nombre='Albal')
+        self.ajena = Autoescuela.objects.get(nombre='Albal')
         self.user = User.objects.create_user(username='ficha-teorica')
         PerfilUsuario.objects.create(usuario=self.user).autoescuelas.add(self.sede)
         self.client.force_login(self.user)
