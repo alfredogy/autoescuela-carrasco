@@ -790,7 +790,9 @@ class RegistroAlumnoCreateView(AutoescuelaActivaMixin, CreateView):
         form.instance.alumno = self.get_alumno()
         form.instance.autoescuela = self.autoescuela_activa
         messages.success(self.request, 'Registro creado correctamente.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        RegistroAlumno.renumerar_b(self.autoescuela_activa)
+        return response
 
     def get_success_url(self):
         return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.kwargs['alumno_pk']})
@@ -813,7 +815,9 @@ class RegistroAlumnoDeleteView(AutoescuelaActivaMixin, DeleteView):
         return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.alumno_id})
 
     def form_valid(self, form):
+        autoescuela = self.object.autoescuela
         response = super().form_valid(form)
+        RegistroAlumno.renumerar_b(autoescuela)
         messages.success(self.request, 'Registro eliminado. El alumno, sus facturas y los demas registros se conservan.')
         return response
 
@@ -833,6 +837,11 @@ class RegistroAlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('facturacion:alumno_detail', kwargs={'pk': self.object.alumno_id})
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        RegistroAlumno.renumerar_b(self.autoescuela_activa)
+        return response
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

@@ -167,7 +167,15 @@ class RegistroAlumno(models.Model):
 
     @classmethod
     def renumerar_b(cls, autoescuela):
-        registros = cls.objects.filter(autoescuela=autoescuela, permiso='B').order_by('numero_registro', 'pk')
+        registros = cls.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
+            models.Case(
+                models.When(fecha_alta__isnull=True, then=models.Value(1)),
+                default=models.Value(0),
+                output_field=models.IntegerField(),
+            ),
+            'fecha_alta',
+            'pk',
+        )
         for numero, registro in enumerate(registros, 1):
             if registro.numero_registro != numero:
                 cls.objects.filter(pk=registro.pk).update(numero_registro=numero)
