@@ -18,11 +18,11 @@ from django.views.generic import (
 )
 
 from .models import (Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, ListadoHistorico,
-                     Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES, ConfiguracionTeorica,
-                     ProfesorTeorica, FichaFormacionTeorica)
+                      Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES, ConfiguracionTeorica,
+                      ProfesorTeorica, FichaFormacionTeorica, FichaFormacionPractica, ClasePractica)
 from .forms import (FacturaForm, AlumnoForm, RegistroAlumnoForm, EventoExamenForm, ConfiguracionForm,
-                    ImportarExcelForm, UsuarioForm, ConfiguracionTeoricaForm, ProfesorTeoricaForm,
-                    FichaFormacionTeoricaForm)
+                     ImportarExcelForm, UsuarioForm, ConfiguracionTeoricaForm, ProfesorTeoricaForm,
+                     FichaFormacionTeoricaForm, FichaFormacionPracticaForm, ClasePracticaForm)
 from .utils.calculos import compute_components, next_invoice_number, find_missing_invoices
 from .utils.dni_validator import validar_dni
 from .utils.iva_comparator import comparar_iva_anual
@@ -637,6 +637,18 @@ def generar_pdf_ficha_teorica(request, registro_pk, autoescuela):
     return response
 
 
+@con_autoescuela
+def generar_pdf_ficha_practica(request, registro_pk, autoescuela):
+    from .utils.pdf_ficha_practica import generate_practical_sheet_pdf
+    registro = get_object_or_404(RegistroAlumno, pk=registro_pk, autoescuela=autoescuela,
+                                 alumno__autoescuela=autoescuela)
+    ficha = get_object_or_404(FichaFormacionPractica.objects.select_related('profesor'), registro=registro)
+    response = HttpResponse(generate_practical_sheet_pdf(registro, ficha), content_type='application/pdf')
+    disposition = 'attachment' if request.GET.get('descargar') else 'inline'
+    response['Content-Disposition'] = f'{disposition}; filename="ficha-practica-{registro.pk}.pdf"'
+    return response
+
+
 # ============================================================
 # Alumnos
 # ============================================================
@@ -895,6 +907,79 @@ class FichaFormacionTeoricaView(AutoescuelaActivaMixin, TemplateView):
             messages.success(request, 'Ficha de formación teórica actualizada.')
             return redirect('facturacion:ficha_teorica', registro_pk=self.get_registro().pk)
         return self.render_to_response(self.get_context_data(form=form))
+
+
+class FichaFormacionPracticaView(AutoescuelaActivaMixin, TemplateView):
+    template_name = 'facturacion/ficha_practica_form.html'
+
+    def get_registro(self):
+        return get_object_or_404(RegistroAlumno, pk=self.kwargs['registro_pk'], autoescuela=self.autoescuela_activa,
+                                 alumno__autoescuela=self.autoescuela_activa)
+
+    def get_ficha(self):
+        return FichaFormacionPractica.objects.filter(registro=self.get_registro()).first()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['registro'] = self.get_registro()
+        ctx['ficha'] = self.get_ficha()
+        ctx['clases'] = ctx['ficha'].clases.all() if ctx['ficha'] else []
+        ctx['form'] = kwargs.get('form') or FichaFormacionPracticaForm(
+            instance=ctx['ficha'], autoescuela=self.autoescuela_activa
+        )
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        ficha = self.get_ficha()
+        form = FichaFormacionPracticaForm(request.POST, instance=ficha, autoescuela=self.autoescuela_activa)
+        if form.is_valid():
+            ficha = form.save(commit=False)
+            ficha.registro = self.get_registro()
+            ficha.save()
+            messages.success(request, 'Ficha de formación práctica actualizada.')
+            return redirect('facturacion:ficha_practica', registro_pk=self.get_registro().pk)
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class ClasePracticaCreateView(AutoescuelaActivaMixin, CreateView):
+    model = ClasePractica
+    form_class = ClasePracticaForm
+    template_name = 'facturacion/clase_practica_form.html'
+
+    def get_ficha(self):
+        return get_object_or_404(FichaFormacionPractica, pk=self.kwargs['ficha_pk'],
+                                 registro__autoescuela=self.autoescuela_activa)
+
+    def form_valid(self, form):
+        form.instance.ficha = self.get_ficha()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:ficha_practica', kwargs={'registro_pk': self.get_ficha().registro_id})
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['ficha'] = self.get_ficha()
+        return ctx
+
+
+class ClasePracticaUpdateView(ClasePracticaCreateView, UpdateView):
+    def get_queryset(self):
+        return ClasePractica.objects.filter(ficha__registro__autoescuela=self.autoescuela_activa)
+
+    def get_ficha(self):
+        return self.object.ficha
+
+
+class ClasePracticaDeleteView(AutoescuelaActivaMixin, DeleteView):
+    model = ClasePractica
+    template_name = 'facturacion/clase_practica_confirm_delete.html'
+
+    def get_queryset(self):
+        return ClasePractica.objects.filter(ficha__registro__autoescuela=self.autoescuela_activa)
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:ficha_practica', kwargs={'registro_pk': self.object.ficha.registro_id})
 
 
 class EventoExamenCreateView(AutoescuelaActivaMixin, CreateView):

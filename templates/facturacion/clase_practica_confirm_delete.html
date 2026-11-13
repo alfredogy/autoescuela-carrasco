@@ -1,0 +1,2 @@
+{% extends "base.html" %}
+{% block content %}<h2>Eliminar clase práctica</h2><p>¿Eliminar la clase del {{ object.fecha|date:"d/m/Y" }}?</p><form method="post">{% csrf_token %}<button class="btn btn-danger">Eliminar</button> <a class="btn btn-secondary" href="{% url 'facturacion:ficha_practica' object.ficha.registro.pk %}">Cancelar</a></form>{% endblock %}

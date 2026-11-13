@@ -60,6 +60,7 @@
                 <a class="btn btn-sm btn-outline-primary" href="{% url 'facturacion:evento_create' registro.pk %}">Registrar examen</a>
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'facturacion:evento_create' registro.pk %}?tipo=RENOVACION">Registrar renovaci&oacute;n acad&eacute;mica</a>
                 <a class="btn btn-sm btn-outline-danger" href="{% url 'facturacion:ficha_teorica' registro.pk %}">Ficha te&oacute;rica</a>
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'facturacion:ficha_practica' registro.pk %}">Ficha pr&aacute;ctica</a>
                 <ul class="mt-2">{% for evento in registro.eventos.all %}<li>{{ evento.fecha|date:"d/m/Y" }}: {{ evento.get_tipo_display }}{% if evento.resultado %} / {{ evento.get_resultado_display }}{% endif %} <a href="{% url 'facturacion:evento_update' evento.pk %}">Editar</a></li>{% empty %}<li class="text-muted">Sin eventos</li>{% endfor %}</ul>
             {% endfor %}
             </div>

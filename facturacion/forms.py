@@ -3,7 +3,8 @@ from decimal import Decimal
 from django import forms
 from django.contrib.auth.models import User
 from .models import (Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, Autoescuela,
-                     CURSO_CHOICES, ConfiguracionTeorica, ProfesorTeorica, FichaFormacionTeorica)
+                     CURSO_CHOICES, ConfiguracionTeorica, ProfesorTeorica, FichaFormacionTeorica,
+                     FichaFormacionPractica, ClasePractica)
 
 
 class FacturaForm(forms.ModelForm):
@@ -257,6 +258,40 @@ class FichaFormacionTeoricaForm(forms.ModelForm):
         self.fields['profesor'].queryset = ProfesorTeorica.objects.filter(autoescuela=autoescuela)
         self.fields['fecha_inicio'].input_formats = ['%Y-%m-%d']
         self.fields['fecha_fin'].input_formats = ['%Y-%m-%d']
+
+
+class FichaFormacionPracticaForm(forms.ModelForm):
+    class Meta:
+        model = FichaFormacionPractica
+        fields = ['profesor', 'tipo', 'observaciones']
+        widgets = {
+            'profesor': forms.Select(attrs={'class': 'form-select'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+    def __init__(self, *args, autoescuela=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['profesor'].queryset = ProfesorTeorica.objects.filter(autoescuela=autoescuela)
+
+
+class ClasePracticaForm(forms.ModelForm):
+    class Meta:
+        model = ClasePractica
+        fields = ['fecha', 'hora', 'ejercicio', 'km_inicial', 'km_final', 'observaciones']
+        widgets = {
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'hora': forms.TimeInput(format='%H:%M', attrs={'class': 'form-control', 'type': 'time'}),
+            'ejercicio': forms.TextInput(attrs={'class': 'form-control'}),
+            'km_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
+            'km_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
+            'observaciones': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['fecha'].input_formats = ['%Y-%m-%d']
+        self.fields['hora'].input_formats = ['%H:%M']
 
 
 class ImportarExcelForm(forms.Form):

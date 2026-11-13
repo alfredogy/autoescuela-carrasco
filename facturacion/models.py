@@ -219,6 +219,27 @@ class FichaFormacionTeorica(models.Model):
     observaciones = models.TextField('Observaciones', blank=True, default='')
 
 
+class FichaFormacionPractica(models.Model):
+    TIPOS = [('DESTREZA', 'Destreza'), ('CIRCULACION', 'Circulación')]
+    registro = models.OneToOneField(RegistroAlumno, on_delete=models.CASCADE, related_name='ficha_practica')
+    profesor = models.ForeignKey(ProfesorTeorica, on_delete=models.PROTECT, related_name='fichas_practica')
+    tipo = models.CharField('Tipo de formación', max_length=20, choices=TIPOS, default='CIRCULACION')
+    observaciones = models.TextField('Observaciones', blank=True, default='')
+
+
+class ClasePractica(models.Model):
+    ficha = models.ForeignKey(FichaFormacionPractica, on_delete=models.CASCADE, related_name='clases')
+    fecha = models.DateField('Fecha')
+    hora = models.TimeField('Hora', null=True, blank=True)
+    ejercicio = models.CharField('Ejercicio', max_length=200, blank=True, default='')
+    km_inicial = models.DecimalField('KM inicial', max_digits=8, decimal_places=2, null=True, blank=True)
+    km_final = models.DecimalField('KM final', max_digits=8, decimal_places=2, null=True, blank=True)
+    observaciones = models.CharField('Observaciones', max_length=300, blank=True, default='')
+
+    class Meta:
+        ordering = ['fecha', 'hora', 'pk']
+
+
 class EventoExamen(models.Model):
     TIPOS = [('TEORICO', 'Teorico'), ('PRACTICO', 'Practico'), ('RENOVACION', 'Renovacion academica')]
     RESULTADOS = [('PENDIENTE', 'Pendiente'), ('APROBADO', 'Aprobado'), ('SUSPENDIDO', 'Suspendido')]

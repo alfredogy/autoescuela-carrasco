@@ -13,7 +13,7 @@ from .utils.pdf_ficha_teorica import generate_theoretical_sheet_pdf
 @override_settings(ALLOWED_HOSTS=['testserver'])
 class FichaTeoricaTests(TestCase):
     def setUp(self):
-        self.sede = Autoescuela.objects.create(nombre='Alfafar')
+        self.sede = Autoescuela.objects.get(nombre='Alfafar')
         self.ajena = Autoescuela.objects.create(nombre='Albal')
         self.user = User.objects.create_user(username='ficha-teorica')
         PerfilUsuario.objects.create(usuario=self.user).autoescuelas.add(self.sede)
@@ -21,13 +21,17 @@ class FichaTeoricaTests(TestCase):
         session = self.client.session
         session['autoescuela_id'] = self.sede.pk
         session.save()
-        self.configuracion = ConfiguracionTeorica.objects.create(
-            autoescuela=self.sede, numero='V1086-02', seccion='2', digito_control='9',
-            denominacion='DAKASA AUTOESCUELA S.L.', direccion='AV. ALBUFERA, 18 PBJ',
-            codigo_postal='46910', poblacion='Alfafar',
+        self.configuracion, _ = ConfiguracionTeorica.objects.get_or_create(
+            autoescuela=self.sede,
+            defaults={
+                'numero': 'V1086-02', 'seccion': '2', 'digito_control': '9',
+                'denominacion': 'DAKASA AUTOESCUELA S.L.', 'direccion': 'AV. ALBUFERA, 18 PBJ',
+                'codigo_postal': '46910', 'poblacion': 'Alfafar',
+            },
         )
-        self.profesor = ProfesorTeorica.objects.create(
-            autoescuela=self.sede, nombre='AINOA ALAPONT CARRASCO', dni='53880414Q',
+        self.profesor, _ = ProfesorTeorica.objects.get_or_create(
+            autoescuela=self.sede, dni='53880414Q',
+            defaults={'nombre': 'AINOA ALAPONT CARRASCO'},
         )
         self.profesor_ajeno = ProfesorTeorica.objects.create(
             autoescuela=self.ajena, nombre='Profesor ajeno', dni='00000000T',

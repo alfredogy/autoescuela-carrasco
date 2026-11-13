@@ -10,6 +10,7 @@ media/
 *.pdf
 !facturacion/assets/
 !facturacion/assets/Ficha Alumno Formac Teorica en blanco.pdf
+!facturacion/assets/Ficha Alumno Practica en blanco.pdf
 facturas_pdf/
 *.log
 .env
