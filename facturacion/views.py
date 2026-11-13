@@ -632,6 +632,9 @@ def generar_pdf_ficha_teorica(request, registro_pk, autoescuela):
     registro = get_object_or_404(RegistroAlumno, pk=registro_pk, autoescuela=autoescuela,
                                  alumno__autoescuela=autoescuela)
     ficha = get_object_or_404(FichaFormacionTeorica.objects.select_related('profesor'), registro=registro)
+    if ficha.profesor_id is None:
+        messages.error(request, 'Asigna un profesor antes de generar la ficha teórica.')
+        return redirect('facturacion:ficha_teorica', registro_pk=registro.pk)
     response = HttpResponse(generate_theoretical_sheet_pdf(registro, ficha), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="ficha-teorica-{registro.pk}.pdf"'
     return response
@@ -643,6 +646,9 @@ def generar_pdf_ficha_practica(request, registro_pk, autoescuela):
     registro = get_object_or_404(RegistroAlumno, pk=registro_pk, autoescuela=autoescuela,
                                  alumno__autoescuela=autoescuela)
     ficha = get_object_or_404(FichaFormacionPractica.objects.select_related('profesor'), registro=registro)
+    if ficha.profesor_id is None:
+        messages.error(request, 'Asigna un profesor antes de generar la ficha práctica.')
+        return redirect('facturacion:ficha_practica', registro_pk=registro.pk)
     response = HttpResponse(generate_practical_sheet_pdf(registro, ficha), content_type='application/pdf')
     disposition = 'attachment' if request.GET.get('descargar') else 'inline'
     response['Content-Disposition'] = f'{disposition}; filename="ficha-practica-{registro.pk}.pdf"'

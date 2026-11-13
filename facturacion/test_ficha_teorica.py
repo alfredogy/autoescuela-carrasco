@@ -84,3 +84,11 @@ class FichaTeoricaTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertFalse(FichaFormacionTeorica.objects.filter(registro=self.registro).exists())
+
+    def test_professor_can_be_left_unassigned(self):
+        url = reverse('facturacion:ficha_teorica', args=[self.registro.pk])
+        response = self.client.post(url, {'profesor': '', 'faltas_asistencia': 0})
+        self.assertRedirects(response, url)
+        ficha = FichaFormacionTeorica.objects.get(registro=self.registro)
+        self.assertIsNone(ficha.profesor_id)
+        self.assertRedirects(self.client.get(reverse('facturacion:ficha_teorica_pdf', args=[self.registro.pk])), url)

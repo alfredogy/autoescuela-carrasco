@@ -212,7 +212,7 @@ class ProfesorTeorica(models.Model):
 
 class FichaFormacionTeorica(models.Model):
     registro = models.OneToOneField(RegistroAlumno, on_delete=models.CASCADE, related_name='ficha_teorica')
-    profesor = models.ForeignKey(ProfesorTeorica, on_delete=models.PROTECT, related_name='fichas_teorica')
+    profesor = models.ForeignKey(ProfesorTeorica, on_delete=models.PROTECT, related_name='fichas_teorica', null=True, blank=True)
     fecha_inicio = models.DateField('Fecha de inicio', null=True, blank=True)
     fecha_fin = models.DateField('Fecha de finalización', null=True, blank=True)
     faltas_asistencia = models.PositiveIntegerField('Faltas de asistencia', default=0)
@@ -222,7 +222,7 @@ class FichaFormacionTeorica(models.Model):
 class FichaFormacionPractica(models.Model):
     TIPOS = [('DESTREZA', 'Destreza'), ('CIRCULACION', 'Circulación')]
     registro = models.OneToOneField(RegistroAlumno, on_delete=models.CASCADE, related_name='ficha_practica')
-    profesor = models.ForeignKey(ProfesorTeorica, on_delete=models.PROTECT, related_name='fichas_practica')
+    profesor = models.ForeignKey(ProfesorTeorica, on_delete=models.PROTECT, related_name='fichas_practica', null=True, blank=True)
     tipo = models.CharField('Tipo de formación', max_length=20, choices=TIPOS, default='CIRCULACION')
     observaciones = models.TextField('Observaciones', blank=True, default='')
 

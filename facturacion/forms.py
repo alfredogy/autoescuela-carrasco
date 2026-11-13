@@ -256,6 +256,8 @@ class FichaFormacionTeoricaForm(forms.ModelForm):
     def __init__(self, *args, autoescuela=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['profesor'].queryset = ProfesorTeorica.objects.filter(autoescuela=autoescuela)
+        self.fields['profesor'].required = False
+        self.fields['profesor'].empty_label = 'Sin asignar'
         self.fields['fecha_inicio'].input_formats = ['%Y-%m-%d']
         self.fields['fecha_fin'].input_formats = ['%Y-%m-%d']
 
@@ -273,6 +275,8 @@ class FichaFormacionPracticaForm(forms.ModelForm):
     def __init__(self, *args, autoescuela=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['profesor'].queryset = ProfesorTeorica.objects.filter(autoescuela=autoescuela)
+        self.fields['profesor'].required = False
+        self.fields['profesor'].empty_label = 'Sin asignar'
 
 
 class ClasePracticaForm(forms.ModelForm):

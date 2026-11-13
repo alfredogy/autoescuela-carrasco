@@ -60,3 +60,10 @@ class FichaPracticaTests(TestCase):
         url = reverse('facturacion:ficha_practica_pdf', args=[self.registro.pk])
         self.assertTrue(self.client.get(url)['Content-Disposition'].startswith('inline'))
         self.assertTrue(self.client.get(f'{url}?descargar=1')['Content-Disposition'].startswith('attachment'))
+
+    def test_practical_sheet_can_be_saved_without_professor(self):
+        url = reverse('facturacion:ficha_practica', args=[self.registro.pk])
+        response = self.client.post(url, {'profesor': '', 'tipo': 'CIRCULACION'})
+        self.assertRedirects(response, url)
+        ficha = FichaFormacionPractica.objects.get(registro=self.registro)
+        self.assertIsNone(ficha.profesor_id)
