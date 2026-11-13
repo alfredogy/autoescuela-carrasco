@@ -23,7 +23,8 @@ def _text(pdf, x, y, value, size=9):
 def generate_theoretical_sheet_pdf(registro, ficha):
     config = ConfiguracionTeorica.get_instance(registro.autoescuela)
     template = PdfReader(str(TEMPLATE_PATH))
-    page = template.pages[0]
+    writer = PdfWriter(clone_from=template)
+    page = writer.pages[0]
     width, height = float(page.mediabox.width), float(page.mediabox.height)
     overlay_buffer = BytesIO()
     overlay = canvas.Canvas(overlay_buffer, pagesize=(width, height))
@@ -65,8 +66,6 @@ def generate_theoretical_sheet_pdf(registro, ficha):
     overlay_page = PdfReader(overlay_buffer).pages[0]
     page.merge_page(overlay_page)
     output = BytesIO()
-    writer = PdfWriter()
-    writer.add_page(page)
     writer.write(output)
     output.seek(0)
     return output
