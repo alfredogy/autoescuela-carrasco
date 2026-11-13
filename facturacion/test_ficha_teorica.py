@@ -67,12 +67,15 @@ class FichaTeoricaTests(TestCase):
         )
 
         pdf = PdfReader(generate_theoretical_sheet_pdf(self.registro, ficha))
+        campos = pdf.get_fields()
         texto = pdf.pages[0].extract_text()
-        self.assertIn('V1086-02', texto)
+        self.assertEqual(campos['Número']['/V'], 'V1086-02')
+        self.assertEqual(campos['DNINIE_2']['/V'], '12345678Z')
+        self.assertEqual(campos['Fecha del examen ddmmaaaaRow1']['/V'], '02/12/2026')
+        self.assertEqual(campos['ResultadoRow1']['/V'], 'Aprobado')
         self.assertIn('AINOA ALAPONT CARRASCO', texto)
-        self.assertIn('02/12/2026', texto)
-        self.assertIn('Aprobado', texto)
-        self.assertNotIn('03/12/2026', texto)
+        self.assertFalse(campos['Fecha del examen ddmmaaaaRow2'].get('/V'))
+        self.assertNotIn('/Names', pdf.trailer['/Root'])
 
     def test_cannot_assign_professor_from_another_school(self):
         response = self.client.post(reverse('facturacion:ficha_teorica', args=[self.registro.pk]), {

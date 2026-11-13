@@ -46,10 +46,13 @@ class FichaPracticaTests(TestCase):
         )
 
         pdf = PdfReader(generate_practical_sheet_pdf(self.registro, ficha))
+        campos = pdf.get_fields()
         texto = pdf.pages[0].extract_text()
         self.assertIn('ANTONIO GARCIA MUÑOZ', texto)
-        self.assertIn('10/11/2026', texto)
-        self.assertIn('Estacionamiento', texto)
+        self.assertEqual(campos['FechaRow1']['/V'], '10/11/2026')
+        self.assertEqual(campos['EjercicioRow1']['/V'], 'Estacionamiento')
+        self.assertEqual(campos['Km inicioRow1']['/V'], '123.40')
+        self.assertNotIn('/Names', pdf.trailer['/Root'])
         self.assertEqual(clase.ficha_id, ficha.pk)
 
     def test_practical_pdf_can_be_opened_or_downloaded(self):
