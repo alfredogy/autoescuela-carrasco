@@ -21,10 +21,14 @@ class RenumerarRegistrosBTests(TestCase):
             numero_registro=numero_registro,
         )
 
-    def test_renumbers_only_b_records_by_fecha_alta_without_gaps(self):
-        posterior = self.registro(fecha_alta=date(2026, 3, 1), numero_registro=40)
+    def test_renumbers_only_b_records_by_fecha_inicio_without_gaps(self):
+        posterior = self.registro(fecha_alta=date(2026, 1, 1), numero_registro=40)
+        posterior.fecha_inicio = date(2026, 3, 1)
+        posterior.save()
         sin_fecha = self.registro(fecha_alta=None, numero_registro=12)
-        primero = self.registro(fecha_alta=date(2026, 1, 1), numero_registro=8)
+        primero = self.registro(fecha_alta=date(2026, 3, 1), numero_registro=8)
+        primero.fecha_inicio = date(2026, 1, 1)
+        primero.save()
         permiso_a = self.registro(permiso='A', fecha_alta=date(2025, 1, 1), numero_registro=None)
 
         RegistroAlumno.renumerar_b(self.sede)

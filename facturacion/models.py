@@ -169,11 +169,11 @@ class RegistroAlumno(models.Model):
     def renumerar_b(cls, autoescuela):
         registros = cls.objects.filter(autoescuela=autoescuela, permiso='B').order_by(
             models.Case(
-                models.When(fecha_alta__isnull=True, then=models.Value(1)),
+                models.When(fecha_inicio__isnull=True, then=models.Value(1)),
                 default=models.Value(0),
                 output_field=models.IntegerField(),
             ),
-            'fecha_alta',
+            'fecha_inicio',
             'pk',
         )
         for numero, registro in enumerate(registros, 1):
