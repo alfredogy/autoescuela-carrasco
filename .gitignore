@@ -8,6 +8,8 @@ staticfiles/
 media/
 *.xlsx
 *.pdf
+!facturacion/assets/
+!facturacion/assets/Ficha Alumno Formac Teorica en blanco.pdf
 facturas_pdf/
 *.log
 .env

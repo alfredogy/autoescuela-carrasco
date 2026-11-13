@@ -1,0 +1,2 @@
+{% extends "base.html" %}
+{% block content %}<h2>Eliminar profesor</h2><p>¿Eliminar a {{ object.nombre }}?</p><form method="post">{% csrf_token %}<button class="btn btn-danger">Eliminar</button> <a class="btn btn-secondary" href="{% url 'facturacion:profesor_teorica_list' %}">Cancelar</a></form>{% endblock %}

@@ -17,8 +17,12 @@ from django.views.generic import (
     TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 )
 
-from .models import Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, ListadoHistorico, Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES
-from .forms import FacturaForm, AlumnoForm, RegistroAlumnoForm, EventoExamenForm, ConfiguracionForm, ImportarExcelForm, UsuarioForm
+from .models import (Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, ListadoHistorico,
+                     Autoescuela, PerfilUsuario, CURSO_CHOICES, PERMISO_CHOICES, ConfiguracionTeorica,
+                     ProfesorTeorica, FichaFormacionTeorica)
+from .forms import (FacturaForm, AlumnoForm, RegistroAlumnoForm, EventoExamenForm, ConfiguracionForm,
+                    ImportarExcelForm, UsuarioForm, ConfiguracionTeoricaForm, ProfesorTeoricaForm,
+                    FichaFormacionTeoricaForm)
 from .utils.calculos import compute_components, next_invoice_number, find_missing_invoices
 from .utils.dni_validator import validar_dni
 from .utils.iva_comparator import comparar_iva_anual
@@ -622,6 +626,17 @@ def generar_pdf_lote(request, autoescuela):
     return response
 
 
+@con_autoescuela
+def generar_pdf_ficha_teorica(request, registro_pk, autoescuela):
+    from .utils.pdf_ficha_teorica import generate_theoretical_sheet_pdf
+    registro = get_object_or_404(RegistroAlumno, pk=registro_pk, autoescuela=autoescuela,
+                                 alumno__autoescuela=autoescuela)
+    ficha = get_object_or_404(FichaFormacionTeorica.objects.select_related('profesor'), registro=registro)
+    response = HttpResponse(generate_theoretical_sheet_pdf(registro, ficha), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="ficha-teorica-{registro.pk}.pdf"'
+    return response
+
+
 # ============================================================
 # Alumnos
 # ============================================================
@@ -848,6 +863,38 @@ class RegistroAlumnoUpdateView(AutoescuelaActivaMixin, UpdateView):
         ctx['titulo'] = 'Editar registro'
         ctx['alumno'] = self.object.alumno
         return ctx
+
+
+class FichaFormacionTeoricaView(AutoescuelaActivaMixin, TemplateView):
+    template_name = 'facturacion/ficha_teorica_form.html'
+
+    def get_registro(self):
+        return get_object_or_404(RegistroAlumno, pk=self.kwargs['registro_pk'], autoescuela=self.autoescuela_activa,
+                                 alumno__autoescuela=self.autoescuela_activa)
+
+    def get_ficha(self):
+        return FichaFormacionTeorica.objects.filter(registro=self.get_registro()).first()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['registro'] = self.get_registro()
+        ctx['ficha'] = self.get_ficha()
+        ctx['eventos_teoricos'] = ctx['registro'].eventos.filter(tipo='TEORICO')
+        ctx['form'] = kwargs.get('form') or FichaFormacionTeoricaForm(
+            instance=ctx['ficha'], autoescuela=self.autoescuela_activa
+        )
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        ficha = self.get_ficha()
+        form = FichaFormacionTeoricaForm(request.POST, instance=ficha, autoescuela=self.autoescuela_activa)
+        if form.is_valid():
+            ficha = form.save(commit=False)
+            ficha.registro = self.get_registro()
+            ficha.save()
+            messages.success(request, 'Ficha de formación teórica actualizada.')
+            return redirect('facturacion:ficha_teorica', registro_pk=self.get_registro().pk)
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 class EventoExamenCreateView(AutoescuelaActivaMixin, CreateView):
@@ -1169,12 +1216,52 @@ class ConfiguracionView(AutoescuelaActivaMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['form'] = ConfiguracionForm(instance=Configuracion.get_instance(self.autoescuela_activa))
+        ctx['form_teorica'] = kwargs.get('form_teorica') or ConfiguracionTeoricaForm(
+            instance=ConfiguracionTeorica.get_instance(self.autoescuela_activa)
+        )
         return ctx
 
     def post(self, request, *args, **kwargs):
         form = ConfiguracionForm(request.POST, instance=Configuracion.get_instance(self.autoescuela_activa))
-        if form.is_valid():
+        form_teorica = ConfiguracionTeoricaForm(request.POST, instance=ConfiguracionTeorica.get_instance(self.autoescuela_activa))
+        if form.is_valid() and form_teorica.is_valid():
             form.save()
+            form_teorica.save()
             messages.success(request, 'Configuración actualizada.')
             return redirect('facturacion:configuracion')
-        return self.render_to_response(self.get_context_data(form=form))
+        return self.render_to_response(self.get_context_data(form=form, form_teorica=form_teorica))
+
+
+class ProfesorTeoricaListView(AutoescuelaActivaMixin, ListView):
+    model = ProfesorTeorica
+    template_name = 'facturacion/profesor_teorica_list.html'
+
+    def get_queryset(self):
+        return ProfesorTeorica.objects.filter(autoescuela=self.autoescuela_activa)
+
+
+class ProfesorTeoricaCreateView(AutoescuelaActivaMixin, CreateView):
+    model = ProfesorTeorica
+    form_class = ProfesorTeoricaForm
+    template_name = 'facturacion/profesor_teorica_form.html'
+
+    def form_valid(self, form):
+        form.instance.autoescuela = self.autoescuela_activa
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:profesor_teorica_list')
+
+
+class ProfesorTeoricaUpdateView(ProfesorTeoricaCreateView, UpdateView):
+    def get_queryset(self):
+        return ProfesorTeorica.objects.filter(autoescuela=self.autoescuela_activa)
+
+
+class ProfesorTeoricaDeleteView(AutoescuelaActivaMixin, DeleteView):
+    model = ProfesorTeorica
+    template_name = 'facturacion/profesor_teorica_confirm_delete.html'
+    success_url = reverse_lazy('facturacion:profesor_teorica_list')
+
+    def get_queryset(self):
+        return ProfesorTeorica.objects.filter(autoescuela=self.autoescuela_activa)

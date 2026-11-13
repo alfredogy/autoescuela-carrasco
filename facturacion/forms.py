@@ -2,7 +2,8 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.models import User
-from .models import Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, Autoescuela, CURSO_CHOICES
+from .models import (Factura, Alumno, RegistroAlumno, EventoExamen, Configuracion, Autoescuela,
+                     CURSO_CHOICES, ConfiguracionTeorica, ProfesorTeorica, FichaFormacionTeorica)
 
 
 class FacturaForm(forms.ModelForm):
@@ -220,6 +221,42 @@ class ConfiguracionForm(forms.ModelForm):
             'emisor_cp': forms.TextInput(attrs={'class': 'form-control', 'style': 'width:100px'}),
             'emisor_municipio': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+
+class ConfiguracionTeoricaForm(forms.ModelForm):
+    class Meta:
+        model = ConfiguracionTeorica
+        fields = ['numero', 'seccion', 'digito_control', 'denominacion', 'direccion', 'codigo_postal', 'poblacion']
+        widgets = {field: forms.TextInput(attrs={'class': 'form-control'}) for field in fields}
+
+
+class ProfesorTeoricaForm(forms.ModelForm):
+    class Meta:
+        model = ProfesorTeorica
+        fields = ['nombre', 'dni']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'dni': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class FichaFormacionTeoricaForm(forms.ModelForm):
+    class Meta:
+        model = FichaFormacionTeorica
+        fields = ['profesor', 'fecha_inicio', 'fecha_fin', 'faltas_asistencia', 'observaciones']
+        widgets = {
+            'profesor': forms.Select(attrs={'class': 'form-select'}),
+            'fecha_inicio': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'faltas_asistencia': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+    def __init__(self, *args, autoescuela=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['profesor'].queryset = ProfesorTeorica.objects.filter(autoescuela=autoescuela)
+        self.fields['fecha_inicio'].input_formats = ['%Y-%m-%d']
+        self.fields['fecha_fin'].input_formats = ['%Y-%m-%d']
 
 
 class ImportarExcelForm(forms.Form):

@@ -181,6 +181,44 @@ class RegistroAlumno(models.Model):
                 cls.objects.filter(pk=registro.pk).update(numero_registro=numero)
 
 
+class ConfiguracionTeorica(models.Model):
+    """Datos DGT usados en la ficha de formación teórica de una sede."""
+    autoescuela = models.OneToOneField(Autoescuela, on_delete=models.CASCADE, related_name='configuracion_teorica')
+    numero = models.CharField('Número', max_length=20, blank=True, default='')
+    seccion = models.CharField('Sección', max_length=20, blank=True, default='')
+    digito_control = models.CharField('Dígito de control', max_length=20, blank=True, default='')
+    denominacion = models.CharField('Denominación', max_length=200, blank=True, default='')
+    direccion = models.CharField('Dirección', max_length=300, blank=True, default='')
+    codigo_postal = models.CharField('Código postal', max_length=10, blank=True, default='')
+    poblacion = models.CharField('Población', max_length=100, blank=True, default='')
+
+    @classmethod
+    def get_instance(cls, autoescuela):
+        return cls.objects.get_or_create(autoescuela=autoescuela)[0]
+
+
+class ProfesorTeorica(models.Model):
+    autoescuela = models.ForeignKey(Autoescuela, on_delete=models.CASCADE, related_name='profesores_teorica')
+    nombre = models.CharField('Nombre y apellidos', max_length=200)
+    dni = models.CharField('DNI/NIE', max_length=20)
+
+    class Meta:
+        ordering = ['nombre']
+        constraints = [models.UniqueConstraint(fields=['autoescuela', 'dni'], name='profesor_teorica_dni_por_sede')]
+
+    def __str__(self):
+        return f'{self.nombre} ({self.dni})'
+
+
+class FichaFormacionTeorica(models.Model):
+    registro = models.OneToOneField(RegistroAlumno, on_delete=models.CASCADE, related_name='ficha_teorica')
+    profesor = models.ForeignKey(ProfesorTeorica, on_delete=models.PROTECT, related_name='fichas_teorica')
+    fecha_inicio = models.DateField('Fecha de inicio', null=True, blank=True)
+    fecha_fin = models.DateField('Fecha de finalización', null=True, blank=True)
+    faltas_asistencia = models.PositiveIntegerField('Faltas de asistencia', default=0)
+    observaciones = models.TextField('Observaciones', blank=True, default='')
+
+
 class EventoExamen(models.Model):
     TIPOS = [('TEORICO', 'Teorico'), ('PRACTICO', 'Practico'), ('RENOVACION', 'Renovacion academica')]
     RESULTADOS = [('PENDIENTE', 'Pendiente'), ('APROBADO', 'Aprobado'), ('SUSPENDIDO', 'Suspendido')]

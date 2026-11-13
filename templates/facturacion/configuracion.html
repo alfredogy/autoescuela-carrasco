@@ -42,6 +42,12 @@
                     </div>
                 </div>
             </div>
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between"><strong>Ficha de formación teórica</strong><a href="{% url 'facturacion:profesor_teorica_list' %}">Gestionar profesores</a></div>
+                <div class="card-body">
+                    {% for field in form_teorica %}<div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+                </div>
+            </div>
         </div>
         <div class="col-md-6">
             <div class="card mb-3">
