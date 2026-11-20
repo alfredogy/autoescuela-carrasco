@@ -23,7 +23,7 @@ class ContratoPermisoBTests(TestCase):
         session.save()
         self.alumno = Alumno.objects.create(
             autoescuela=self.sede, nombre='MUÑOZ GARCÍA ANA', nombre_pila='ANA', apellido1='MUÑOZ', apellido2='GARCÍA',
-            dni='12345678Z', telefono='600123456', correo_electronico='ana@example.test', direccion='Calle Mayor 1',
+            dni='12345678Z', telefono='600123456', correo_electronico='ana@example.test', direccion='Calle Mayor 1', municipio='Alfafar',
             codigo_postal='46910', fecha_nacimiento=date(2000, 1, 2),
         )
         self.registro = RegistroAlumno.objects.create(
@@ -33,7 +33,7 @@ class ContratoPermisoBTests(TestCase):
     def test_contract_contains_registration_number_and_available_student_data(self):
         pdf = PdfReader(generate_permit_b_contract_pdf(self.registro))
         texto = pdf.pages[0].extract_text()
-        for value in ('12', 'ANA MUÑOZ GARCÍA', '12345678Z', '600123456', 'ana@example.test', '02/01/2000'):
+        for value in ('12', 'ANA MUÑOZ GARCÍA', '12345678Z', 'Alfafar', '600123456', 'ana@example.test', '02/01/2000'):
             self.assertIn(value, texto)
 
     def test_individual_and_bulk_contract_downloads(self):

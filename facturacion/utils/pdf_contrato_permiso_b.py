@@ -32,12 +32,13 @@ def generate_permit_b_contract_pdf(registro):
     alumno = registro.alumno
 
     _text(overlay, 530, 784, registro.numero_registro, 50, 9)
-    _text(overlay, 120, 671, alumno.nombre_listado, 320, 8)
-    _text(overlay, 485, 671, alumno.dni, 85, 8)
-    _text(overlay, 85, 655, alumno.direccion, 420, 8)
-    _text(overlay, 525, 655, alumno.codigo_postal, 55, 8)
-    _text(overlay, 80, 638, alumno.telefono, 45, 8)
-    _text(overlay, 234, 638, _date(alumno.fecha_nacimiento), 38, 7)
+    _text(overlay, 120, 671, alumno.nombre_listado, 220, 8)
+    _text(overlay, 410, 671, alumno.dni, 160, 8)
+    _text(overlay, 85, 655, alumno.direccion, 250, 8)
+    _text(overlay, 420, 655, alumno.municipio, 80, 8)
+    _text(overlay, 535, 655, alumno.codigo_postal, 45, 8)
+    _text(overlay, 40, 633, _date(alumno.fecha_nacimiento), 100, 7)
+    _text(overlay, 210, 638, alumno.telefono, 55, 8)
     _text(overlay, 365, 638, alumno.correo_electronico, 140, 8)
     overlay.save()
 
