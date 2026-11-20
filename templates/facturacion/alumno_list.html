@@ -21,6 +21,7 @@
     <div class="col-md-2"><input type="number" name="numero_registro" value="{{ numero_registro_filtro }}" class="form-control" placeholder="Nº registro"></div>
     <div class="col-md-2"><input type="date" name="fecha_alta" value="{{ fecha_alta_filtro }}" class="form-control"></div>
     <div class="col-md-2"><select name="orden" class="form-select"><option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Ordenar por nombre</option><option value="registro" {% if orden == 'registro' %}selected{% endif %}>Nº registro</option><option value="alta" {% if orden == 'alta' %}selected{% endif %}>Fecha de alta</option></select></div>
+    <div class="col-md-2"><div class="form-check pt-2"><input class="form-check-input" type="checkbox" name="direccion_incompleta" value="1" id="direccion-incompleta" {% if direccion_incompleta %}checked{% endif %}><label class="form-check-label" for="direccion-incompleta">Dirección incompleta</label></div></div>
 </form>
 
 <div class="table-responsive">
@@ -32,7 +33,7 @@
         <tbody>
         {% for a in object_list %}
         <tr>
-            <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre_listado }}</a></td>
+            <td><a href="{% url 'facturacion:alumno_detail' a.pk %}">{{ a.nombre_listado }}</a>{% if not a.direccion or not a.codigo_postal or not a.municipio %} <span class="badge text-bg-warning">Dirección incompleta</span>{% endif %}</td>
             <td>{{ a.dni }}</td>
             <td>{{ a.registro_principal.permiso }}</td>
             <td>{{ a.registro_principal.numero_registro|default_if_none:"" }} <a href="{% url 'facturacion:alumno_detail' a.pk %}" aria-label="Ver historial completo de {{ a.nombre_listado }}">Historial</a></td>

@@ -713,9 +713,12 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
         permiso = self.request.GET.get('permiso')
         numero_registro = self.request.GET.get('numero_registro')
         fecha_alta = self.request.GET.get('fecha_alta')
+        direccion_incompleta = self.request.GET.get('direccion_incompleta') == '1'
         orden = self.request.GET.get('orden', 'nombre')
         if q:
             qs = qs.filter(Q(nombre__icontains=q) | Q(dni__icontains=q))
+        if direccion_incompleta:
+            qs = qs.filter(Q(direccion='') | Q(codigo_postal='') | Q(municipio=''))
         matching = RegistroAlumno.objects.filter(alumno_id=OuterRef('pk'), autoescuela=self.autoescuela_activa)
         if permiso:
             matching = matching.filter(permiso=permiso)
@@ -744,6 +747,7 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
         ctx['permiso_filtro'] = self.request.GET.get('permiso', '')
         ctx['numero_registro_filtro'] = self.request.GET.get('numero_registro', '')
         ctx['fecha_alta_filtro'] = self.request.GET.get('fecha_alta', '')
+        ctx['direccion_incompleta'] = self.request.GET.get('direccion_incompleta') == '1'
         ctx['orden'] = self.request.GET.get('orden', 'nombre')
         ctx['permisos'] = PERMISO_CHOICES
         ctx['total_alumnos'] = Alumno.objects.filter(autoescuela=self.autoescuela_activa).count()

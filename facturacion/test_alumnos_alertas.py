@@ -166,6 +166,16 @@ class FacturaAlumnoTests(SedeTestCase):
 
 
 class AlumnoListadoTests(SedeTestCase):
+    def test_filters_students_with_incomplete_address(self):
+        incompleto = Alumno.objects.create(
+            autoescuela=self.sede, nombre='Sin municipio', direccion='Calle Mayor 1', codigo_postal='46910',
+        )
+        response = self.client.get(reverse('facturacion:alumno_list'), {'direccion_incompleta': '1'})
+
+        self.assertEqual(list(response.context['object_list']), [incompleto])
+        self.assertContains(response, 'Dirección incompleta')
+        self.assertContains(response, 'name="direccion_incompleta" value="1" id="direccion-incompleta" checked')
+
     def test_pagination_51_students_multirecords_no_duplicates_or_missing_last(self):
         Alumno.objects.bulk_create([Alumno(autoescuela=self.sede, nombre=f'Alumno {i}', nombre_pila=f'A{i:03}')
                                    for i in range(50)])
