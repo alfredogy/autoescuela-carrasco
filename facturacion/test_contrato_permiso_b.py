@@ -22,7 +22,7 @@ class ContratoPermisoBTests(TestCase):
         session['autoescuela_id'] = self.sede.pk
         session.save()
         self.alumno = Alumno.objects.create(
-            autoescuela=self.sede, nombre='GARCIA PEREZ ANA', nombre_pila='ANA', apellido1='GARCIA', apellido2='PEREZ',
+            autoescuela=self.sede, nombre='MUÑOZ GARCÍA ANA', nombre_pila='ANA', apellido1='MUÑOZ', apellido2='GARCÍA',
             dni='12345678Z', telefono='600123456', correo_electronico='ana@example.test', direccion='Calle Mayor 1',
             codigo_postal='46910', fecha_nacimiento=date(2000, 1, 2),
         )
@@ -33,7 +33,7 @@ class ContratoPermisoBTests(TestCase):
     def test_contract_contains_registration_number_and_available_student_data(self):
         pdf = PdfReader(generate_permit_b_contract_pdf(self.registro))
         texto = pdf.pages[0].extract_text()
-        for value in ('12', 'ANA GARCIA PEREZ', '12345678Z', '600123456', 'ana@example.test', '02/01/2000'):
+        for value in ('12', 'ANA MUÑOZ GARCÍA', '12345678Z', '600123456', 'ana@example.test', '02/01/2000'):
             self.assertIn(value, texto)
 
     def test_individual_and_bulk_contract_downloads(self):
@@ -44,4 +44,4 @@ class ContratoPermisoBTests(TestCase):
         lote = self.client.get(reverse('facturacion:contrato_permiso_b_lote'))
         self.assertEqual(lote.status_code, 200)
         with ZipFile(BytesIO(b''.join(lote.streaming_content) if hasattr(lote, 'streaming_content') else lote.content)) as archivo:
-            self.assertEqual(archivo.namelist(), ['contrato-B-0012-ANA_GARCIA_PEREZ.pdf'])
+            self.assertEqual(archivo.namelist(), ['contrato-B-0012-ANA_MUÑOZ_GARCÍA.pdf'])
