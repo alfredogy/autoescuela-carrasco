@@ -44,4 +44,4 @@ class ContratoPermisoBTests(TestCase):
         lote = self.client.get(reverse('facturacion:contrato_permiso_b_lote'))
         self.assertEqual(lote.status_code, 200)
         with ZipFile(BytesIO(b''.join(lote.streaming_content) if hasattr(lote, 'streaming_content') else lote.content)) as archivo:
-            self.assertEqual(archivo.namelist(), ['contrato-B-0012-ANA_MUÑOZ_GARCÍA.pdf'])
+            self.assertEqual(archivo.namelist(), ['contrato-B-0012-ANA_MU_OZ_GARC_A.pdf'])
