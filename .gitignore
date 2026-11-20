@@ -11,6 +11,7 @@ media/
 !facturacion/assets/
 !facturacion/assets/Ficha Alumno Formac Teorica en blanco.pdf
 !facturacion/assets/Ficha Alumno Practica en blanco.pdf
+!facturacion/assets/Contrato de Ensenanza Permiso B.pdf
 facturas_pdf/
 *.log
 .env

@@ -7,6 +7,7 @@
     <div class="col-auto">
         <a href="{% url 'facturacion:alumno_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo alumno</a>
         <a href="{% url 'facturacion:exportar_registro_b' %}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Registro B</a>
+        {% if contratos_b_disponibles %}<a href="{% url 'facturacion:contrato_permiso_b_lote' %}" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Contratos B</a>{% endif %}
         <a href="{% url 'facturacion:exportar_alumnos' %}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar Excel</a>
     </div>
 </div>

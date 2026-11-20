@@ -1,4 +1,5 @@
 import zipfile
+import re
 from functools import wraps
 from io import BytesIO
 from decimal import Decimal
@@ -655,6 +656,41 @@ def generar_pdf_ficha_practica(request, registro_pk, autoescuela):
     return response
 
 
+@con_autoescuela
+def generar_pdf_contrato_permiso_b(request, registro_pk, autoescuela):
+    from .utils.pdf_contrato_permiso_b import generate_permit_b_contract_pdf
+    registro = get_object_or_404(RegistroAlumno, pk=registro_pk, autoescuela=autoescuela,
+                                 alumno__autoescuela=autoescuela, permiso='B', numero_registro__isnull=False)
+    if autoescuela.nombre != 'Alfafar':
+        return HttpResponse(status=404)
+    response = HttpResponse(generate_permit_b_contract_pdf(registro), content_type='application/pdf')
+    disposition = 'attachment' if request.GET.get('descargar') else 'inline'
+    response['Content-Disposition'] = f'{disposition}; filename="contrato-B-{registro.numero_registro}.pdf"'
+    return response
+
+
+@con_autoescuela
+def generar_pdf_contratos_permiso_b_lote(request, autoescuela):
+    from .utils.pdf_contrato_permiso_b import generate_permit_b_contract_pdf
+    if autoescuela.nombre != 'Alfafar':
+        return HttpResponse(status=404)
+    registros = RegistroAlumno.objects.filter(
+        autoescuela=autoescuela, permiso='B', numero_registro__isnull=False,
+    ).select_related('alumno').order_by('numero_registro', 'pk')
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for registro in registros:
+            nombre = re.sub(r'[^A-Za-z0-9._-]+', '_', registro.alumno.nombre_listado)
+            zf.writestr(
+                f'contrato-B-{registro.numero_registro:04d}-{nombre}.pdf',
+                generate_permit_b_contract_pdf(registro).read(),
+            )
+    zip_buffer.seek(0)
+    response = HttpResponse(zip_buffer, content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="contratos-permiso-B.zip"'
+    return response
+
+
 # ============================================================
 # Alumnos
 # ============================================================
@@ -711,6 +747,7 @@ class AlumnoListView(AutoescuelaActivaMixin, ListView):
         ctx['orden'] = self.request.GET.get('orden', 'nombre')
         ctx['permisos'] = PERMISO_CHOICES
         ctx['total_alumnos'] = Alumno.objects.filter(autoescuela=self.autoescuela_activa).count()
+        ctx['contratos_b_disponibles'] = self.autoescuela_activa.nombre == 'Alfafar'
         query = self.request.GET.copy()
         query.pop('page', None)
         ctx['pagination_query'] = query.urlencode()

@@ -20,6 +20,8 @@
                 <tr><th>Primer apellido</th><td>{{ object.apellido1 }}</td></tr>
                 <tr><th>Segundo apellido</th><td>{{ object.apellido2 }}</td></tr>
                 <tr><th>DNI</th><td>{{ object.dni }}</td></tr>
+                <tr><th>Tel&eacute;fono</th><td>{{ object.telefono }}</td></tr>
+                <tr><th>Correo electr&oacute;nico</th><td>{{ object.correo_electronico }}</td></tr>
                 <tr><th>Caducidad DNI/NIE</th><td>{{ object.fecha_caducidad_dni|date:"d/m/Y" }}</td></tr>
                 <tr><th>Direcci&oacute;n</th><td>{{ object.direccion }}</td></tr>
                 <tr><th>C.P.</th><td>{{ object.codigo_postal }}</td></tr>
@@ -61,6 +63,7 @@
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'facturacion:evento_create' registro.pk %}?tipo=RENOVACION">Registrar renovaci&oacute;n acad&eacute;mica</a>
                 <a class="btn btn-sm btn-outline-danger" href="{% url 'facturacion:ficha_teorica' registro.pk %}">Ficha te&oacute;rica</a>
                 <a class="btn btn-sm btn-outline-danger" href="{% url 'facturacion:ficha_practica' registro.pk %}">Ficha pr&aacute;ctica</a>
+                {% if registro.permiso == 'B' and registro.numero_registro %}<a class="btn btn-sm btn-outline-danger" target="_blank" href="{% url 'facturacion:contrato_permiso_b_pdf' registro.pk %}">Contrato B</a>{% endif %}
                 <ul class="mt-2">{% for evento in registro.eventos.all %}<li>{{ evento.fecha|date:"d/m/Y" }}: {{ evento.get_tipo_display }}{% if evento.resultado %} / {{ evento.get_resultado_display }}{% endif %} <a href="{% url 'facturacion:evento_update' evento.pk %}">Editar</a></li>{% empty %}<li class="text-muted">Sin eventos</li>{% endfor %}</ul>
             {% endfor %}
             </div>

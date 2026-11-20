@@ -88,6 +88,8 @@ class Alumno(models.Model):
     apellido1 = models.CharField('Primer apellido', max_length=100, blank=True, default='')
     apellido2 = models.CharField('Segundo apellido', max_length=100, blank=True, default='')
     dni = models.CharField('DNI/NIE', max_length=20, blank=True, default='')
+    telefono = models.CharField('Teléfono', max_length=30, blank=True, default='')
+    correo_electronico = models.EmailField('Correo electrónico', blank=True, default='')
     direccion = models.CharField('Dirección', max_length=300, blank=True, default='')
     codigo_postal = models.CharField('C.P.', max_length=10, blank=True, default='')
     municipio = models.CharField('Municipio', max_length=100, blank=True, default='')

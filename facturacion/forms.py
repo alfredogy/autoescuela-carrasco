@@ -109,7 +109,7 @@ class AlumnoForm(forms.ModelForm):
     class Meta:
         model = Alumno
         fields = [
-            'nombre', 'nombre_pila', 'apellido1', 'apellido2', 'dni', 'direccion', 'codigo_postal', 'municipio', 'provincia',
+            'nombre', 'nombre_pila', 'apellido1', 'apellido2', 'dni', 'telefono', 'correo_electronico', 'direccion', 'codigo_postal', 'municipio', 'provincia',
             'fecha_nacimiento', 'fecha_caducidad_dni',
         ]
         widgets = {
@@ -238,6 +238,8 @@ class ProfesorTeoricaForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'dni': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
+            'correo_electronico': forms.EmailInput(attrs={'class': 'form-control'}),
         }
 
 
